@@ -92,7 +92,7 @@ def find_font(name):
             logger.info(f'found font at {font.fname}')
             return Path(font.fname)
     logger.error(f'could not find a suitable font for {name}')
-    exit()
+    sys.exit(4)
 
 videos = get_videos(searchPath)
 video_names = get_video_names(searchPath)
