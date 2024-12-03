@@ -1,0 +1,8 @@
+Dockerfile
+Makefile
+Push image to ghcr
+Logging
+Error handling
+Environment variables
+Metrics
+Deploy it
