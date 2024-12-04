@@ -40,8 +40,6 @@ if searchPath is None:
     logger.error("search path has not been configured. set the SEARCH_PATH env var")
     bail()
 
-searchPath = "/home/nibor/eiland/"
-
 def get_videos(path):
      return [join(path,f) for f in listdir(path) if isfile(join(path, f))]
 
@@ -134,7 +132,6 @@ def get_sub(video_id, sub_id):
     sub = [sub for idx, sub in enumerate(video[0]['subs']) if str(idx) == sub_id]
     if len(sub) == 0:
         return "subtitle with ID {} from video {} not found".format(sub_id, video[0]['title']), 404
-    
     sub_data = {
         'episode': video[0]['id'],
         'start': sub[0].start,

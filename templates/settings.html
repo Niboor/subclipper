@@ -69,7 +69,14 @@
                     name="font_type"
                 >
                     {% for font_type in font_types %}
-                        <option value="{{ font_type }}">{{ font_type }}</option>
+                        <option
+                            value="{{ font_type }}"
+                            {% if sub.font_type == font_type %}
+                                selected="selected"
+                            {% endif %}
+                        >
+                            {{ font_type }}
+                        </option>
                     {% endfor %}
                 </select>
             </span>
