@@ -32,14 +32,15 @@ app = Flask(__name__)
 
 logger = app.logger
 
-#handler = logging.StreamHandler(sys.stdout)
-#handler.setLevel(logging.INFO)
-#formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-#handler.setFormatter(formatter)
-#logger.addHandler(handler)
+def bail():
+    sys.exit(4)
 
-# TODO env vars
-searchPath = "/home/nmattela/eiland/"
+searchPath = os.getenv("SEARCH_PATH")
+if searchPath is None:
+    logger.error("search path has not been configured. set the SEARCH_PATH env var")
+    bail()
+
+searchPath = "/home/nibor/eiland/"
 
 def get_videos(path):
      return [join(path,f) for f in listdir(path) if isfile(join(path, f))]
@@ -93,7 +94,7 @@ def find_font(name):
             logger.info(f'found font at {font.fname}')
             return Path(font.fname)
     logger.error(f'could not find a suitable font for {name}')
-    exit()
+    bail()
 
 videos = get_videos(searchPath)
 video_names = get_video_names(searchPath)
