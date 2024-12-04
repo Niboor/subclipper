@@ -110,10 +110,12 @@ templates = Environment(loader = FileSystemLoader('templates'))
 
 logger.info("ready to start the application")
 
+# Serves anything stored in public folder
 @app.route("/public/<path:path>")
 def get_public(path):
     return send_from_directory("public", path)
 
+# Shows the main UI
 @app.route("/")
 def get_index():
     search = request.args.get("q")
@@ -123,6 +125,7 @@ def get_index():
     else:
         return render_template("index.html", videos=videos_with_subs)
     
+# Creates the GIF settings that is shown at the bottom of the page
 @app.route("/sub_form/<video_id>/<sub_id>")
 def get_sub(video_id, sub_id):
     video = [video for video in videos_with_subs if str(video['id']) == video_id]
@@ -145,14 +148,17 @@ def get_sub(video_id, sub_id):
     }
     return render_template("settings.html", sub=sub_data, font_types=fonts)
 
+# Creates the GIF preview when submitting the GIF settings form
 @app.route("/gif_preview")
 def get_gif_preview():
     return render_template("gif_preview.html", url="/gif?{}".format(request.query_string.decode()))
 
+# Returns subs as JSON
 @app.route("/subs")
 def get_subs():
     return subs
 
+# Creates the GIF and returns the created binary
 @app.route("/gif")
 def get_gif():
     start_time = request.args.get('start', 0, type=int)
