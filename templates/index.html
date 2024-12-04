@@ -1,0 +1,32 @@
+{% extends "layout.html" %}
+{% block content %}
+    <div class="content">
+        <div id="search">
+            <input
+                name="q"
+                type="search"
+                placeholder="Search for a subtitle..."
+                value="{{ request.args.get('q') or '' }}"
+                hx-get="/"
+                hx-trigger="search, keyup delay:200ms changed"
+                hx-target="#sublist"
+                style="width: 100%;"
+            />
+        </div>
+        <div id="sublist">
+            {% include "sublist.html" %}
+        </div>
+        <div id="below">
+            <div id="settings">
+                {% with sub=None %}
+                    {% include "settings.html" %}
+                {% endwith %}
+            </div>
+            <div id="gif_preview">
+                {% with url=None %}
+                    {% include "gif_preview.html" %}
+                {% endwith %}
+            </div>
+        </div>
+    </div>
+{% endblock %}

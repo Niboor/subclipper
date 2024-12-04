@@ -1,0 +1,92 @@
+{% if sub is none %}
+    <h2>
+        Please select a subtitle...
+    </h2>
+{% else %}
+    <form
+        id="gif_settings_form"
+        hx-get="/gif_preview"
+        hx-vals='{"episode": "{{ sub.episode }}"}'
+        hx-target="#gif_preview"
+    >
+        <div>
+            <span>
+                <label for="start">Start time (ms)</label>
+                <input
+                    name="start"
+                    type="number"
+                    value="{{ sub.start }}"
+                />
+            </span>
+            <span>
+                <label for="end">End time (ms)</label>
+                <input
+                    name="end"
+                    type="number"
+                    value="{{ sub.end }}"
+                />
+            </span>
+        </div>
+        <div>
+            <label for="text">GIF text</label>
+            <input
+                name="text"
+                type="text"
+                value="{{ sub.text }}"
+                style="width:100%;"
+            />
+        </div>
+        <div>
+            <span>
+                <label for="fps">FPS</label>
+                <input
+                    name="fps"
+                    type="number"
+                    value="{{ sub.fps }}"
+                />
+            </span>
+            <span>
+                <label for="crop">Square GIF (crop sides)</label>
+                <input
+                    name="crop"
+                    type="checkbox"
+                    value="{{ sub.crop }}"
+                />
+            </span>
+            <span>
+                <label for="resolution">Resolution</label>
+                <input
+                    name="resolution"
+                    type="number"
+                    value="{{ sub.resolution }}"
+                />
+            </span>
+        </div>
+        <div>
+            <span>
+                <label for="font_type">Font type</label>
+                <select
+                    name="font_type"
+                >
+                    {% for font_type in font_types %}
+                        <option value="{{ font_type }}">{{ font_type }}</option>
+                    {% endfor %}
+                </select>
+            </span>
+            <span>
+                <label for="font_size">Font size</label>
+                <input
+                    name="font_size"
+                    type="number"
+                    value="{{ sub.font_size }}"
+                />
+            </span>
+        </div>
+        <div>
+            <input
+                type="submit"
+                value="Generate GIF"
+            />
+        </div>
+    </form>
+{% endif %}

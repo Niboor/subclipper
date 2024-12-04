@@ -1,0 +1,18 @@
+<ul class="video-list">
+    {% for video in videos %}
+        <li>
+            <h2>{{ video.title }}</h2>
+            <ul class="clickable-list">
+                {% for sub in video['subs'] %}
+                    <li
+                        class="clickable-list-item"
+                        hx-get="/sub_form/{{ video['id'] }}/{{ loop.index0 }}"
+                        hx-target="#settings"
+                    >
+                        {{ sub.text }}
+                    </li>
+                {% endfor %}
+            </ul>
+        </li>
+    {% endfor %}
+</ul>

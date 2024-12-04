@@ -1,0 +1,8 @@
+__pycache__/
+bin/
+lib/
+lib64/
+lib64
+share/
+include/
+pyvenv.cfg

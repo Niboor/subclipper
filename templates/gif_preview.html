@@ -1,0 +1,8 @@
+{% if url is none %}
+    <h3>Preview will appear here</h3>
+{% else %}
+    <img
+        src="{{ url }}"
+        alt="Preview of the GIF"
+    />
+{% endif %}
