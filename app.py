@@ -97,15 +97,19 @@ def find_font(name):
 videos = get_videos(searchPath)
 video_names = get_video_names(searchPath)
 
-# Preload the response; it's always the same
+# Loads the video subtitles
 video_subs = load_subs(videos)
+# Creates a list of video data with subtitles
 videos_with_subs = [{ 'title': video_names[idx], 'id': idx, 'subs': v[0] } for idx, v in enumerate(video_subs)]
+# Convert sub data to JSON data
 subs = subs2json(video_subs)
+# Creates a list of the installed fonts
 fonts = font_manager.findSystemFonts(fontpaths=None, fontext='ttf')
 
 # Find a suitable font
 font = find_font('Noto')
 
+# Jinja2 templates
 templates = Environment(loader = FileSystemLoader('templates'))
 
 logger.info("ready to start the application")
@@ -153,7 +157,7 @@ def get_sub(video_id, sub_id):
 def get_gif_preview():
     return render_template("gif_preview.html", url="/gif?{}".format(request.query_string.decode()))
 
-# Returns subs as JSON
+# Returns subs as JSON. This is not used in the UI
 @app.route("/subs")
 def get_subs():
     return subs
