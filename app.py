@@ -121,9 +121,6 @@ def get_index():
     search = request.args.get("q")
     if search is not None:
         filtered_subs = [{ **video, 'subs': [sub for sub in video['subs'] if search.lower() in sub.text] } for video in videos_with_subs]
-        for video in filtered_subs:
-            for sub in video['subs']:
-                print(sub)
         return render_template("sublist.html", videos=filtered_subs)
     else:
         return render_template("index.html", videos=videos_with_subs)
@@ -153,7 +150,6 @@ def get_sub(video_id, sub_id):
 
 @app.route("/gif_preview")
 def get_gif_preview():
-    print("/gif?{}".format(str(request.query_string)))
     return render_template("gif_preview.html", url="/gif?{}".format(request.query_string.decode()))
 
 @app.route("/subs")
