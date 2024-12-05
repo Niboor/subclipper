@@ -87,7 +87,8 @@ body {
 }
 
 #settings {
-    padding: 0 2rem;
+    box-sizing: border-box;
+    padding: 2rem;
 }
 
 #gif_settings_form {
@@ -150,7 +151,7 @@ body {
     background-color: lightgray;
 }
 
-#gif_preview {
+#gif_view {
     overflow: auto;
 }
 

@@ -160,10 +160,10 @@ def get_sub(video_id, sub_id):
     }
     return render_template("settings.html", sub=sub_data, font_types=fonts)
 
-# Creates the GIF preview when submitting the GIF settings form
-@app.route("/gif_preview")
-def get_gif_preview():
-    return render_template("gif_preview.html", url="/gif?{}".format(request.query_string.decode()))
+# Creates the GIF image when submitting the GIF settings form
+@app.route("/gif_view")
+def get_gif_view():
+    return render_template("gif_view.html", url="/gif?{}".format(request.query_string.decode()))
 
 # Returns subs as JSON. This is not used in the UI
 @app.route("/subs")
