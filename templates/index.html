@@ -3,6 +3,7 @@
     <div class="content">
         <div id="search">
             <input
+                id="search"
                 name="q"
                 type="search"
                 placeholder="Search for a subtitle..."
@@ -10,11 +11,15 @@
                 hx-get="/"
                 hx-trigger="search, keyup delay:200ms changed"
                 hx-target="#sublist"
+                hx-replace-url="true"
+                hx-vals="js:{video: new URLSearchParams(window.location.search).get('video')}"
                 style="width: 100%;"
             />
         </div>
         <div id="sublist">
-            {% include "sublist.html" %}
+            {% with videos=videos, subs=subs, pages=pages %}
+                {% include "sublist.html" %}
+            {% endwith %}
         </div>
         <div id="below">
             <div id="settings">

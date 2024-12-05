@@ -100,7 +100,7 @@ video_names = get_video_names(searchPath)
 # Loads the video subtitles
 video_subs = load_subs(videos)
 # Creates a list of video data with subtitles
-videos_with_subs = [{ 'title': video_names[idx], 'id': idx, 'subs': v[0] } for idx, v in enumerate(video_subs)]
+videos_with_subs = [{ 'title': video_names[idx], 'id': idx, 'subs': [{ 'id': idx, 'start': sub.start, 'end': sub.end, 'text': sub.text } for idx, sub in enumerate(v[0])] } for idx, v in enumerate(video_subs)]
 # Convert sub data to JSON data
 subs = subs2json(video_subs)
 # Creates a list of the installed fonts
@@ -123,11 +123,19 @@ def get_public(path):
 @app.route("/")
 def get_index():
     search = request.args.get("q")
-    if search is not None:
-        filtered_subs = [{ **video, 'subs': [sub for sub in video['subs'] if search.lower() in sub.text] } for video in videos_with_subs]
-        return render_template("sublist.html", videos=filtered_subs)
+    video_id = request.args.get("video", None, type=int)
+    page = request.args.get("page", 0, type=int)
+    page_length = request.args.get("page_length", 50, type=int)
+    subs = [{ **sub, 'video_id': video['id']} for video in videos_with_subs for sub in video['subs'] if (search.lower() in sub['text'] if search is not None else True) and (video_id == video['id'] if video_id is not None else True)]
+    subs_paginated = [subs[x:x+page_length] for x in range(0, len(subs), page_length)]
+    if page < 0 or page >= len(subs_paginated):
+        # page goes out of bounds so put it in bounds again
+        page = len(subs_paginated) - 1
+    hx_request = request.headers.get("HX-Request")
+    if hx_request is None:
+        return render_template("index.html", videos=videos_with_subs, subs=subs_paginated[page], pages=subs_paginated)
     else:
-        return render_template("index.html", videos=videos_with_subs)
+        return render_template("sublist.html", videos=videos_with_subs, subs=subs_paginated[page], pages=subs_paginated)
     
 # Creates the GIF settings that is shown at the bottom of the page
 @app.route("/sub_form/<video_id>/<sub_id>")
@@ -136,14 +144,14 @@ def get_sub(video_id, sub_id):
     if len(video) == 0:
         return "video with ID {} not found".format(video_id), 404
     
-    sub = [sub for idx, sub in enumerate(video[0]['subs']) if str(idx) == sub_id]
+    sub = [sub for sub in video[0]['subs'] if str(sub['id']) == sub_id]
     if len(sub) == 0:
         return "subtitle with ID {} from video {} not found".format(sub_id, video[0]['title']), 404
     sub_data = {
         'episode': video[0]['id'],
-        'start': sub[0].start,
-        'end': sub[0].end,
-        'text': sub[0].text,
+        'start': sub[0]['start'],
+        'end': sub[0]['end'],
+        'text': sub[0]['text'],
         'fps': 25,
         'crop': False,
         'resolution': 320,
