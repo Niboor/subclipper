@@ -1,0 +1,9 @@
+{% if url is none %}
+    <h3>GIF will appear here</h3>
+{% else %}
+    <img
+        class="gif-image"
+        src="{{ url }}"
+        alt="The GIF is loading..."
+    />
+{% endif %}
