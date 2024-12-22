@@ -1,0 +1,189 @@
+body {
+    padding: 1rem;
+    margin: 0;
+    box-sizing: border-box;
+    width: 100vw;
+    height: 100vh;
+}
+
+.content {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.content>*:nth-child(1) {
+    height: 2rem;
+}
+
+.content>*:nth-child(2) {
+    height: calc(75% - 2rem);
+}
+
+.content>*:nth-child(3) {
+    height: calc(25% - 2rem);
+}
+
+#sublist {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+#below {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+}
+
+#below>* {
+    flex: 1 1 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border-top: 1px solid black;
+}
+
+#below>*:first-child {
+    border-right: 1px solid black;
+}
+
+#settings {
+    overflow: auto;
+}
+
+.video-list {
+    overflow: auto;
+    list-style-type: none;
+}
+
+.clickable-list-container {
+    overflow: auto;
+    height: calc(100% - 6rem);
+}
+
+.clickable-list {
+    list-style-type: none;
+    padding: 0;
+}
+
+.clickable-list > li:nth-of-type(odd) {
+    background: lightgray;
+}
+
+.clickable-list > li:hover {
+    background: darkgray
+}
+
+.clickable-list-item {
+    padding: 0.2rem;
+    cursor: pointer
+}
+
+#settings {
+    box-sizing: border-box;
+    padding: 2rem;
+}
+
+#gif_settings_form {
+    width: 100%;
+    height: 100%;
+}
+
+#gif_settings_form>div {
+    width: 100%;
+}
+
+.tab-header {
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    height: 3rem;
+}
+
+.tab-header-button {
+    flex: 1 1 0;
+    /* width: 100%; */
+    min-width: 3rem;
+    border: 1px solid black;
+    cursor: pointer;
+
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+
+    overflow: hidden;
+    text-wrap: nowrap;
+    text-overflow: ellipsis;
+}
+
+.tab-header-button:hover {
+    background-color: darkgray;
+}
+
+.tab-header-button-selected {
+    background-color: lightgray;
+}
+
+.pagination-footer {
+    display: flex;
+    justify-content: safe center;
+    align-items: center;
+    width: 100%;
+    height: 3rem;
+    overflow-x: auto;
+    overflow-y: visible;
+}
+
+.pagination-button {
+    width: 2rem;
+    height: 2rem;
+    min-width: 2rem;
+    box-sizing: border-box;
+    border: 1px solid black;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+    cursor: pointer;
+}
+
+.pagination-button:hover {
+    background-color: darkgray;
+}
+
+.pagination-button-selected {
+    background-color: lightgray;
+}
+
+#gif-view {
+    overflow: auto;
+}
+
+@media (max-width: 500px) {
+    #settings {
+        padding: 0;
+    }
+}
+
+.gif-image {
+    min-width: 320px;
+    min-height: 160px;
+    max-width: fit-content;
+    max-height: fit-content;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: safe center;
+    align-items: safe center;
+}
