@@ -4,7 +4,7 @@ RUN apt-get update
 RUN apt-get install -y ffmpeg python3 pip git fonts-noto
 
 WORKDIR /app
-COPY app.py requirements.txt ./
+COPY app.py requirements.txt public templates ./
 RUN pip install --break-system-packages gunicorn && pip install --break-system-packages -r requirements.txt
 
 EXPOSE 8000
