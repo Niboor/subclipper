@@ -1,0 +1,31 @@
+<div class="tab-header">
+    <div
+        name="video"
+        value=""
+        class="tab-header-button {{ 'tab-header-button-selected' if request.args.get('video') is none else '' }}"
+        hx-get="/"
+        hx-trigger="click"
+        hx-target="#sublist"
+        hx-replace-url="true"
+        hx-include="[name='q']"
+    >
+        All videos
+    </div>
+    {% for video in videos %}
+        <div
+            name="video"
+            value="{{ video.id }}"
+            class="tab-header-button {{ 'tab-header-button-selected' if request.args.get('video') == video.id|string else '' }}"
+            hx-get="/?video={{ video['id'] }}"
+            hx-trigger="click"
+            hx-target="#sublist"
+            hx-replace-url="true"
+            hx-include="[name='q']"
+        >
+            {{ video.title }}
+        </div>
+    {% endfor %}
+</div>
+<div class="empty-list">
+    No results found.
+</div>

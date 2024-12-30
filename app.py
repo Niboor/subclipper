@@ -137,16 +137,17 @@ def get_index():
     video_id = request.args.get("video", None, type=int)
     page = request.args.get("page", 0, type=int)
     page_length = request.args.get("page_length", 50, type=int)
-    subs = [{ **sub, 'video_id': video['id']} for video in videos_with_subs for sub in video['subs'] if (search.lower() in sub['text'] if search is not None else True) and (video_id == video['id'] if video_id is not None else True)]
+    subs = [{ **sub, 'video_id': video['id']} for video in videos_with_subs for sub in video['subs'] if (search.lower() in sub['text'].lower() if search is not None else True) and (video_id == video['id'] if video_id is not None else True)]
     subs_paginated = [subs[x:x+page_length] for x in range(0, len(subs), page_length)]
-    if page < 0 or page >= len(subs_paginated):
-        # page goes out of bounds so put it in bounds again
-        page = len(subs_paginated) - 1
+    if len(subs) == 0: 
+        subs_paginated_page = []
+    else:
+        subs_paginated_page = subs_paginated[page]
     hx_request = request.headers.get("HX-Request")
     if hx_request is None:
-        return render_template("index.html", videos=videos_with_subs, subs=subs_paginated[page], pages=subs_paginated, show_name=showName)
+        return render_template("index.html", videos=videos_with_subs, subs=subs_paginated_page, pages=subs_paginated, show_name=showName)
     else:
-        return render_template("sublist.html", videos=videos_with_subs, subs=subs_paginated[page], pages=subs_paginated, show_name=showName)
+        return render_template("sublist.html", videos=videos_with_subs, subs=subs_paginated_page, pages=subs_paginated, show_name=showName)
 
 # Creates the GIF settings that is shown at the bottom of the page
 @app.route("/sub_form/<video_id>/<sub_id>")
