@@ -11,6 +11,7 @@ import tempfile
 import os
 from logging.config import dictConfig
 from jinja2 import Environment, FileSystemLoader
+import unicodedata
 
 dictConfig({
     'version': 1,
@@ -103,6 +104,12 @@ def find_font():
     font = font_manager.findfont('') # I can't be bothered right now to figure out how fonts work, this just gets us a fallback font
     return Path(font)
 
+def normalize_string(s):
+    return ''.join(
+        c for c in unicodedata.normalize('NFD', s)
+        if unicodedata.category(c) != 'Mn'
+    )
+
 videos = get_videos(searchPath)
 video_names = get_video_names(searchPath)
 
@@ -137,12 +144,11 @@ def get_index():
     video_id = request.args.get("video", None, type=int)
     page = request.args.get("page", 0, type=int)
     page_length = request.args.get("page_length", 50, type=int)
-    subs = [{ **sub, 'video_id': video['id']} for video in videos_with_subs for sub in video['subs'] if (search.lower() in sub['text'].lower() if search is not None else True) and (video_id == video['id'] if video_id is not None else True)]
+    subs = [{ **sub, 'video_id': video['id']} for video in videos_with_subs for sub in video['subs'] if (normalize_string(search.lower()) in normalize_string(sub['text'].lower()) if search else True) and (video_id == video['id'] if video_id is not None else True)]
     subs_paginated = [subs[x:x+page_length] for x in range(0, len(subs), page_length)]
-    if len(subs) == 0: 
-        subs_paginated_page = []
-    else:
-        subs_paginated_page = subs_paginated[page]
+
+    subs_paginated_page = subs_paginated[page] if subs else []
+
     hx_request = request.headers.get("HX-Request")
     if hx_request is None:
         return render_template("index.html", videos=videos_with_subs, subs=subs_paginated_page, pages=subs_paginated, show_name=showName)
