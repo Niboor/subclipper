@@ -90,14 +90,18 @@ def find_request_errors(start_time, end_time, text, crop, resolution, episode):
         return 'invalid episode id'
     return None
 
-def find_font(name):
-    ttf = font_manager.fontManager.ttflist
-    for font in ttf:
-        if name in font.name:
-            logger.info(f'found font at {font.fname}')
-            return Path(font.fname)
-    logger.error(f'could not find a suitable font for {name}')
-    bail()
+#def find_font(name):
+#    ttf = font_manager.fontManager.ttflist
+#    for font in ttf:
+#        if name in font.name:
+#            logger.info(f'found font at {font.fname}')
+#            return Path(font.fname)
+#    logger.error(f'could not find a suitable font for {name}')
+#    bail()
+
+def find_font():
+    font = font_manager.findfont('') # I can't be bothered right now to figure out how fonts work, this just gets us a fallback font
+    return Path(font)
 
 videos = get_videos(searchPath)
 video_names = get_video_names(searchPath)
@@ -111,10 +115,10 @@ videos_with_subs.sort(key=lambda x: x['title'])
 subs = subs2json(video_subs)
 
 # Find a suitable font
-font_name = os.getenv("FONT")
-if font_name is None:
-    font_name = "Noto"
-font = find_font(font_name)
+#font_name = os.getenv("FONT")
+#if font_name is None:
+#    font_name = "DejaVuSans"
+font = find_font()
 
 # Jinja2 templates
 templates = Environment(loader = FileSystemLoader('templates'))

@@ -1,7 +1,7 @@
 FROM debian:12.8-slim
 
 RUN apt-get update
-RUN apt-get install -y ffmpeg python3 pip git fonts-noto
+RUN apt-get install -y ffmpeg python3 pip git
 
 WORKDIR /app
 COPY app.py requirements.txt ./
