@@ -187,3 +187,14 @@ body {
     justify-content: safe center;
     align-items: safe center;
 }
+
+.header {
+  padding: 20px;
+  text-align: center;
+  color: black;
+  font-size: 30px;
+}
+
+footer {
+  padding: 10px;
+}

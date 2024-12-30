@@ -11,7 +11,7 @@
     >
         <div>
             <span>
-                <label for="start">Start time (ms)</label>
+                <label for="start">Start time</label>
                 <input
                     name="start"
                     type="number"
@@ -19,7 +19,7 @@
                 />
             </span>
             <span>
-                <label for="end">End time (ms)</label>
+                <label for="end">End time</label>
                 <input
                     name="end"
                     type="number"
@@ -38,14 +38,6 @@
         </div>
         <div>
             <span>
-                <label for="fps">FPS</label>
-                <input
-                    name="fps"
-                    type="number"
-                    value="{{ sub.fps }}"
-                />
-            </span>
-            <span>
                 <label for="crop">Square GIF (crop sides)</label>
                 <input
                     name="crop"
@@ -63,23 +55,6 @@
             </span>
         </div>
         <div>
-            <span>
-                <label for="font_type">Font type</label>
-                <select
-                    name="font_type"
-                >
-                    {% for font_type in font_types %}
-                        <option
-                            value="{{ font_type }}"
-                            {% if sub.font_type == font_type %}
-                                selected="selected"
-                            {% endif %}
-                        >
-                            {{ font_type }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </span>
             <span>
                 <label for="font_size">Font size</label>
                 <input

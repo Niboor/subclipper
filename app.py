@@ -40,6 +40,11 @@ if searchPath is None:
     logger.error("search path has not been configured. set the SEARCH_PATH env var")
     bail()
 
+showName = os.getenv("SHOW_NAME")
+if showName is None:
+    logger.error("show name has not been configured. set the SHOW_NAME env var")
+    bail()
+
 def get_videos(path):
      return [join(path,f) for f in listdir(path) if isfile(join(path, f))]
 
@@ -77,7 +82,7 @@ def subs2json(subs):
 def find_request_errors(start_time, end_time, text, crop, resolution, episode):
     if end_time <= start_time:
         return 'end time must be after start time'
-    if end_time - start_time > 10000:
+    if end_time - start_time > 10:
         return 'gif too long'
     if resolution < 50 or resolution > 1024:
         return 'resolution must be between 50 and 1024'
@@ -101,13 +106,15 @@ video_names = get_video_names(searchPath)
 video_subs = load_subs(videos)
 # Creates a list of video data with subtitles
 videos_with_subs = [{ 'title': video_names[idx], 'id': idx, 'subs': [{ 'id': idx, 'start': sub.start, 'end': sub.end, 'text': sub.text } for idx, sub in enumerate(v[0])] } for idx, v in enumerate(video_subs)]
+videos_with_subs.sort(key=lambda x: x['title'])
 # Convert sub data to JSON data
 subs = subs2json(video_subs)
-# Creates a list of the installed fonts
-fonts = font_manager.findSystemFonts(fontpaths=None, fontext='ttf')
 
 # Find a suitable font
-font = find_font('Noto')
+font_name = os.getenv("FONT")
+if font_name is None:
+    font_name = "Noto"
+font = find_font(font_name)
 
 # Jinja2 templates
 templates = Environment(loader = FileSystemLoader('templates'))
@@ -133,32 +140,31 @@ def get_index():
         page = len(subs_paginated) - 1
     hx_request = request.headers.get("HX-Request")
     if hx_request is None:
-        return render_template("index.html", videos=videos_with_subs, subs=subs_paginated[page], pages=subs_paginated)
+        return render_template("index.html", videos=videos_with_subs, subs=subs_paginated[page], pages=subs_paginated, show_name=showName)
     else:
-        return render_template("sublist.html", videos=videos_with_subs, subs=subs_paginated[page], pages=subs_paginated)
-    
+        return render_template("sublist.html", videos=videos_with_subs, subs=subs_paginated[page], pages=subs_paginated, show_name=showName)
+
 # Creates the GIF settings that is shown at the bottom of the page
 @app.route("/sub_form/<video_id>/<sub_id>")
 def get_sub(video_id, sub_id):
     video = [video for video in videos_with_subs if str(video['id']) == video_id]
     if len(video) == 0:
         return "video with ID {} not found".format(video_id), 404
-    
+
     sub = [sub for sub in video[0]['subs'] if str(sub['id']) == sub_id]
     if len(sub) == 0:
         return "subtitle with ID {} from video {} not found".format(sub_id, video[0]['title']), 404
     sub_data = {
         'episode': video[0]['id'],
-        'start': sub[0]['start'],
-        'end': sub[0]['end'],
+        'start': sub[0]['start'] / 1000,
+        'end': sub[0]['end'] / 1000,
         'text': sub[0]['text'],
-        'fps': 25,
         'crop': False,
         'resolution': 320,
         'font_type': font.as_posix(),
         'font_size': 20,
     }
-    return render_template("settings.html", sub=sub_data, font_types=fonts)
+    return render_template("settings.html", sub=sub_data)
 
 # Creates the GIF image when submitting the GIF settings form
 @app.route("/gif_view")
@@ -173,14 +179,14 @@ def get_subs():
 # Creates the GIF and returns the created binary
 @app.route("/gif")
 def get_gif():
-    start_time = request.args.get('start', 0, type=int)
-    end_time = request.args.get('end', 0, type=int)
+    start_time = request.args.get('start', 0, type=float)
+    end_time = request.args.get('end', 0, type=float)
     text = request.args.get('text', '', type=str)
-    fps = request.args.get('fps', 25, type=int)
+    fps = 25
     crop = request.args.get('crop', False, type=bool)
     resolution = request.args.get('resolution', 500, type=int)
     episode = request.args.get('episode', -1, type=int)
-    font_type = Path(request.args.get('font_type', '', type=str))
+    #font_type = Path(request.args.get('font_type', '', type=str))
     font_size = request.args.get('font_size', 20, type=str)
     errs = find_request_errors(start_time, end_time, text, crop, resolution, episode)
     if errs is not None:
@@ -191,8 +197,8 @@ def get_gif():
         output_gif = os.path.join(tmp, 'clip.gif')
         video_path = os.path.join(searchPath, video_names[episode])
         err, ok = generate_gif(
-                start_time / 1000,
-                end_time / 1000,
+                start_time,
+                end_time,
                 output_clip,
                 output_gif,
                 text,
@@ -200,7 +206,7 @@ def get_gif():
                 fps,
                 crop,
                 resolution,
-                font_type,
+                font,
                 font_size,
         )
         if ok:
