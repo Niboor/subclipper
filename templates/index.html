@@ -1,9 +1,9 @@
 {% extends "layout.html" %}
 {% block content %}
-    <div class="header">
-        {{ show_name }} GIF generator
-    </div>
     <div class="content">
+        <div class="header">
+            {{ show_name }} GIF generator
+        </div>
         <div id="search">
             <input
                 id="search"
@@ -36,9 +36,9 @@
                 {% endwith %}
             </div>
         </div>
+        <hr>
+        <footer>
+            All rights to "{{ show_name }}" are reserved by their respective owners. Made using <a href=https://github.com/Niboor/subclipper/>Subclipper</a>
+        </footer>
     </div>
-    <hr>
-    <footer>
-        All rights to "{{ show_name }}" are reserved by their respective owners. Made using <a href=https://github.com/Niboor/subclipper/>Subclipper</a>
-    </footer>
 {% endblock %}

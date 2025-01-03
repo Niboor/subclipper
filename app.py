@@ -156,15 +156,16 @@ def get_index():
         return render_template("sublist.html", videos=videos_with_subs, subs=subs_paginated_page, pages=subs_paginated, show_name=showName)
 
 # Creates the GIF settings that is shown at the bottom of the page
+# to prevent XSS attacks, user input MUST not be shown unless sanitized
 @app.route("/sub_form/<video_id>/<sub_id>")
 def get_sub(video_id, sub_id):
     video = [video for video in videos_with_subs if str(video['id']) == video_id]
     if len(video) == 0:
-        return "video with ID {} not found".format(video_id), 404
+        return "video with given ID not found".format(video_id), 404
 
     sub = [sub for sub in video[0]['subs'] if str(sub['id']) == sub_id]
     if len(sub) == 0:
-        return "subtitle with ID {} from video {} not found".format(sub_id, video[0]['title']), 404
+        return "subtitle not found".format(sub_id, video[0]['title']), 404
     sub_data = {
         'episode': video[0]['id'],
         'start': sub[0]['start'] / 1000,
@@ -197,8 +198,7 @@ def get_gif():
     crop = request.args.get('crop', False, type=bool)
     resolution = request.args.get('resolution', 500, type=int)
     episode = request.args.get('episode', -1, type=int)
-    #font_type = Path(request.args.get('font_type', '', type=str))
-    font_size = request.args.get('font_size', 20, type=str)
+    font_size = request.args.get('font_size', 20, type=int)
     errs = find_request_errors(start_time, end_time, text, crop, resolution, episode)
     if errs is not None:
         logger.warn(f"got invalid request: {errs}")
