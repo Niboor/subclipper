@@ -19,11 +19,19 @@ body {
 }
 
 .content>*:nth-child(2) {
-    height: calc(75% - 2rem);
+    height: 2rem;
 }
 
 .content>*:nth-child(3) {
-    height: calc(25% - 2rem);
+    height: calc(75% - 5rem);
+}
+
+.content>*:nth-child(4) {
+    height: calc(25% - 5rem);
+}
+
+.content>*:nth-child(5) {
+    height: 1rem;
 }
 
 #sublist {
@@ -189,14 +197,16 @@ body {
 }
 
 .header {
-  padding: 20px;
+  padding: 4px;
   text-align: center;
   color: black;
   font-size: 30px;
 }
 
-footer {
-  padding: 10px;
+#footer {
+  text-align: center;
+  border-top: 1px solid black;
+  padding-top: 2px;
 }
 
 .empty-list {

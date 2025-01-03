@@ -110,13 +110,16 @@ def normalize_string(s):
         if unicodedata.category(c) != 'Mn'
     )
 
+def drop_suffix(s):
+    return s.removesuffix('.mp4').removesuffix('.mkv')
+
 videos = get_videos(searchPath)
 video_names = get_video_names(searchPath)
 
 # Loads the video subtitles
 video_subs = load_subs(videos)
 # Creates a list of video data with subtitles
-videos_with_subs = [{ 'title': video_names[idx], 'id': idx, 'subs': [{ 'id': idx, 'start': sub.start, 'end': sub.end, 'text': sub.text } for idx, sub in enumerate(v[0])] } for idx, v in enumerate(video_subs)]
+videos_with_subs = [{ 'title': drop_suffix(video_names[idx]), 'id': idx, 'subs': [{ 'id': idx, 'start': sub.start, 'end': sub.end, 'text': sub.text } for idx, sub in enumerate(v[0])] } for idx, v in enumerate(video_subs)]
 videos_with_subs.sort(key=lambda x: x['title'])
 # Convert sub data to JSON data
 subs = subs2json(video_subs)
