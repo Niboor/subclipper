@@ -80,7 +80,7 @@ def subs2json(subs):
         out[idx] = ep_dict
     return json.dumps(out)
 
-def find_request_errors(start_time, end_time, text, crop, resolution, episode):
+def find_request_errors(start_time, end_time, text, crop, resolution, episode, caption, font_size):
     if end_time <= start_time:
         return 'end time must be after start time'
     if end_time - start_time > 10:
@@ -89,6 +89,12 @@ def find_request_errors(start_time, end_time, text, crop, resolution, episode):
         return 'resolution must be between 50 and 1024'
     if episode < 0 or episode > len(video_names) - 1:
         return 'invalid episode id'
+    if len(text) > 200:
+        return 'subtitle text too large'
+    if len(caption) > 200:
+        return 'caption too large'
+    if font_size > 50:
+        return 'font size too large'
     return None
 
 #def find_font(name):
@@ -197,12 +203,15 @@ def get_gif():
     start_time = request.args.get('start', 0, type=float)
     end_time = request.args.get('end', 0, type=float)
     text = request.args.get('text', '', type=str)
-    fps = 25
+    fps = 20
     crop = request.args.get('crop', False, type=bool)
     resolution = request.args.get('resolution', 500, type=int)
     episode = request.args.get('episode', -1, type=int)
     font_size = request.args.get('font_size', 20, type=int)
-    errs = find_request_errors(start_time, end_time, text, crop, resolution, episode)
+    caption = request.args.get('caption', '', type=str)
+    boomerang = request.args.get('boomerang', False, type=bool)
+    colour = request.args.get('colour', False, type=bool)
+    errs = find_request_errors(start_time, end_time, text, crop, resolution, episode, caption, font_size)
     if errs is not None:
         logger.warn(f"got invalid request: {errs}")
         return errs, 400
@@ -216,12 +225,15 @@ def get_gif():
                 output_clip,
                 output_gif,
                 text,
+                caption,
                 video_path,
                 fps,
                 crop,
+                boomerang,
                 resolution,
                 font,
                 font_size,
+                colour,
         )
         if ok:
             return send_file(output_gif)

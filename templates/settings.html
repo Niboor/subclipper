@@ -10,6 +10,15 @@
         hx-target="#gif-view"
     >
         <div>
+            <label for="text">Subs</label>
+            <input
+                name="text"
+                type="text"
+                value="{{ sub.text }}"
+                style="width:90%;"
+            />
+        </div>
+        <div>
             <span>
                 <label for="start">Start time</label>
                 <input
@@ -17,6 +26,7 @@
                     type="number"
                     value="{{ sub.start }}"
                 />
+                &nbsp;
             </span>
             <span>
                 <label for="end">End time</label>
@@ -28,23 +38,6 @@
             </span>
         </div>
         <div>
-            <label for="text">GIF text</label>
-            <input
-                name="text"
-                type="text"
-                value="{{ sub.text }}"
-                style="width:100%;"
-            />
-        </div>
-        <div>
-            <span>
-                <label for="crop">Square GIF (crop sides)</label>
-                <input
-                    name="crop"
-                    type="checkbox"
-                    value="{{ 'true' if sub.crop else 'false' }}"
-                />
-            </span>
             <span>
                 <label for="resolution">Resolution</label>
                 <input
@@ -52,9 +45,8 @@
                     type="number"
                     value="{{ sub.resolution }}"
                 />
+                &nbsp;
             </span>
-        </div>
-        <div>
             <span>
                 <label for="font_size">Font size</label>
                 <input
@@ -63,6 +55,43 @@
                     value="{{ sub.font_size }}"
                 />
             </span>
+        </div>
+        <div>
+            <span>
+                <label for="crop">Square GIF (crop)</label>
+                <input
+                    name="crop"
+                    type="checkbox"
+                    value="{{ 'true' if sub.crop else 'false' }}"
+                />
+                &nbsp;
+            </span>
+            <span>
+                <label for="boomerang">Boomerang GIF (loop)</label>
+                <input
+                    name="boomerang"
+                    type="checkbox"
+                    value="{{ 'true' if sub.boomerang else 'false' }}"
+                />
+                &nbsp;
+            </span>
+            <span>
+                <label for="colour">Better colours</label>
+                <input
+                    name="colour"
+                    type="checkbox"
+                    value="{{ 'true' if sub.colour else 'false' }}"
+                />
+            </span>
+        </div>
+        <div>
+            <label for="text">Caption</label>
+            <input
+                name="caption"
+                type="text"
+                value="{{ sub.caption }}"
+                style="width:90%;"
+            />
         </div>
         <div>
             <input
