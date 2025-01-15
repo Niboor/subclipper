@@ -39,6 +39,7 @@
                     hx-get="/sub_form/{{ sub['video_id'] }}/{{ sub['id'] }}"
                     hx-target="#settings"
                 >
+                    <b><i>{{ videos[sub.video_id].title }}</b></i>
                     {{ sub.text }}
                 </li>
             {% endfor %}
