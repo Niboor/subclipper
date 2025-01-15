@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, send_file, send_from_directory
+from flask import Flask, render_template, request, send_file, send_from_directory, make_response
 from subs.subs import (extract_subs, generate_gif)
 from os import listdir
 from os.path import isfile, join
@@ -123,6 +123,12 @@ def normalize_string(s):
 def drop_suffix(s):
     return s.removesuffix('.mp4').removesuffix('.mkv')
 
+def cached_render_template(template, **context):
+    rendered_template = render_template(template, **context)
+    response = make_response(rendered_template)
+    response.headers['Cache-Control'] = 'public, max-age=86400'
+    return response
+
 videos = get_videos(searchPath)
 video_names = get_video_names(searchPath)
 
@@ -148,7 +154,9 @@ logger.info("ready to start the application")
 # Serves anything stored in public folder
 @app.route("/public/<path:path>")
 def get_public(path):
-    return send_from_directory("public", path)
+    response = send_from_directory("public", path)
+    response.headers['Cache-Control'] = 'public, max-age=86400'
+    return response
 
 # Shows the main UI
 @app.route("/")
@@ -164,9 +172,9 @@ def get_index():
 
     hx_request = request.headers.get("HX-Request")
     if hx_request is None:
-        return render_template("index.html", videos=videos_with_subs, subs=subs_paginated_page, pages=subs_paginated, show_name=showName)
+        return cached_render_template("index.html", videos=videos_with_subs, subs=subs_paginated_page, pages=subs_paginated, show_name=showName)
     else:
-        return render_template("sublist.html", videos=videos_with_subs, subs=subs_paginated_page, pages=subs_paginated, show_name=showName)
+        return cached_render_template("sublist.html", videos=videos_with_subs, subs=subs_paginated_page, pages=subs_paginated, show_name=showName)
 
 # Creates the GIF settings that is shown at the bottom of the page
 # to prevent XSS attacks, user input MUST not be shown unless sanitized
@@ -189,17 +197,19 @@ def get_sub(video_id, sub_id):
         'font_type': font.as_posix(),
         'font_size': 20,
     }
-    return render_template("settings.html", sub=sub_data)
+    return cached_render_template("settings.html", sub=sub_data)
 
 # Creates the GIF image when submitting the GIF settings form
 @app.route("/gif_view")
 def get_gif_view():
-    return render_template("gif_view.html", url="/gif?{}".format(request.query_string.decode()))
+    return cached_render_template("gif_view.html", url="/gif?{}".format(request.query_string.decode()))
 
 # Returns subs as JSON. This is not used in the UI
 @app.route("/subs")
 def get_subs():
-    return subs
+    response = make_response(subs)
+    response.headers['Cache-Control'] = 'public, max-age=86400'
+    return response
 
 # Creates the GIF and returns the created binary
 @app.route("/gif")
@@ -240,6 +250,8 @@ def get_gif():
                 colour,
         )
         if ok:
-            return send_file(output_gif)
+            response = send_file(output_gif, mimetype='image/gif')
+            response.headers['Cache-Control'] = 'public, max-age=86400'
+            return response
         logger.warn(f"could not generate GIF: {err}")
         return err, 500
