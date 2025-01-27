@@ -6,3 +6,4 @@ lib64
 share/
 include/
 pyvenv.cfg
+node_modules/

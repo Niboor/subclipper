@@ -1,105 +1,110 @@
 {% if sub is none %}
-    <h2>
-        Please select a subtitle...
+    <h2 class="text-lg text-base-content font-semibold w-full h-full flex flex-col justify-center items-center">
+        Select a subtitle from the list and tweak it here...
     </h2>
 {% else %}
     <form
-        id="gif_settings_form"
+        class="w-full flex flex-col justify-between gap-2"
         hx-get="/gif_view"
         hx-vals='{"episode": "{{ sub.episode }}"}'
         hx-target="#gif-view"
     >
-        <div>
-            <label for="text">Subs</label>
+        <fieldset>
+            <legend class="fieldset-legend">Subs</legend>
             <input
                 name="text"
                 type="text"
+                class="input"
                 value="{{ sub.text }}"
                 style="width:90%;"
             />
-        </div>
-        <div>
-            <span>
-                <label for="start">Start time</label>
+        </fieldset>
+        <div class="flex flex-row gap-4">
+            <fieldset>
+                <legend class="fieldset-legend">Start time</legend>
                 <input
+                    class="input"
                     name="start"
                     type="number"
                     step="any"
                     value="{{ sub.start }}"
                 />
-                &nbsp;
-            </span>
-            <span>
-                <label for="end">End time</label>
+            </fieldset>
+            <fieldset>
+                <legend class="fieldset-legend">End time</legend>
                 <input
+                    class="input"
                     name="end"
                     type="number"
                     step="any"
                     value="{{ sub.end }}"
                 />
-            </span>
+            </fieldset>
         </div>
-        <div>
-            <span>
-                <label for="resolution">Resolution</label>
+        <div class="flex flex-row gap-4">
+            <fieldset>
+                <legend class="fieldset-legend">Resolution</legend>
                 <input
+                    class="input"
                     name="resolution"
                     type="number"
                     value="{{ sub.resolution }}"
                 />
-                &nbsp;
-            </span>
-            <span>
-                <label for="font_size">Font size</label>
+            </fieldset>
+            <fieldset>
+                <legend class="fieldset-legend">Font size</legend>
                 <input
+                    class="input"
                     name="font_size"
                     type="number"
                     value="{{ sub.font_size }}"
                 />
-            </span>
+            </fieldset>
         </div>
-        <div>
-            <span>
-                <label for="crop">Square GIF (crop)</label>
+        <div class="flex flex-row gap-4">
+            <fieldset>
+                <legend class="fieldset-legend">Square GIF (crop)</legend>
                 <input
+                    class="checkbox"
                     name="crop"
                     type="checkbox"
                     value="{{ 'true' if sub.crop else 'false' }}"
                 />
-                &nbsp;
-            </span>
-            <span>
-                <label for="boomerang">Boomerang GIF (loop)</label>
+            </fieldset>
+            <fieldset>
+                <legend class="fieldset-legend">Boomerang GIF (loop)</legend>
                 <input
+                    class="checkbox"
                     name="boomerang"
                     type="checkbox"
                     value="{{ 'true' if sub.boomerang else 'false' }}"
                 />
-                &nbsp;
-            </span>
-            <span>
-                <label for="colour">Better colours</label>
+            </fieldset>
+            <fieldset>
+                <legend class="fieldset-legend">Better colours</legend>
                 <input
+                    class="checkbox"
                     name="colour"
                     type="checkbox"
                     value="{{ 'true' if sub.colour else 'false' }}"
                 />
-            </span>
+            </fieldset>
         </div>
-        <div>
-            <label for="text">Caption</label>
+        <fieldset>
+            <legend class="fieldset-legend">Caption</legend>
             <input
+                class="input"
                 name="caption"
                 type="text"
                 value="{{ sub.caption }}"
                 style="width:90%;"
             />
-        </div>
-        <div>
-            <input
-                type="submit"
-                value="Generate GIF"
-            />
-        </div>
+        </fieldset>
+        <button
+            class="btn btn-primary"
+            type="submit"
+        >
+            Generate GIF
+        </button>
     </form>
 {% endif %}

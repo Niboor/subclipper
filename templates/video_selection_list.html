@@ -1,0 +1,32 @@
+<ul
+    class="{{ 'hidden md:flex w-full flex-row justify-center menu menu-horizontal bg-base-200 rounded-box min-h-12 overflow-x-auto' if size == 'large' else 'menu dropdown-content bg-base-200 rounded-box min-h-12 shadow-sm' }}"
+>
+    <li
+        name="video"
+        value=""
+        hx-get="/"
+        hx-trigger="click"
+        hx-target="main"
+        hx-replace-url="true"
+        hx-include="[name='q']"
+    >
+        <a class="{{ 'menu-active' if request.args.get('video') is none else '' }}">
+            All videos
+        </a>
+    </li>
+    {% for video in videos %}
+        <li
+            name="video"
+            value="{{ video.id }}"
+            hx-get="/?video={{ video['id'] }}"
+            hx-trigger="click"
+            hx-target="main"
+            hx-replace-url="true"
+            hx-include="[name='q']"
+        >
+            <a class="{{ 'menu-active' if request.args.get('video') == video.id|string else '' }}">
+                {{ video.title }}
+            </a>
+        </li>
+    {% endfor %}
+</ul>

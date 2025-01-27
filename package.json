@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "@tailwindcss/cli": "^4.0.0",
+    "tailwindcss": "^4.0.0"
+  },
+  "devDependencies": {
+    "daisyui": "^5.0.0-beta.2"
+  }
+}

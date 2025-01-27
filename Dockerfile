@@ -1,7 +1,12 @@
 FROM debian:12.8-slim
 
 RUN apt-get update
-RUN apt-get install -y python3 pip git wget xz-utils
+RUN apt-get install -y python3 pip git wget xz-utils nodejs npm
+
+RUN npm install --global yarn
+
+RUN yarn --frozen-lockfile
+RUN npx @tailwindcss/cli -i public/main.css -o public/tailwind.css
 
 # Precompiled latest FFmpeg build
 RUN wget https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2025-01-15-12-55/ffmpeg-N-118315-g4f3c9f2f03-linux64-gpl.tar.xz \

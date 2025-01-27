@@ -46,11 +46,13 @@ if showName is None:
     logger.error("show name has not been configured. set the SHOW_NAME env var")
     bail()
 
+# get the full path of all video files in the given path
 def get_videos(path):
      videos = [join(path,f) for f in listdir(path) if isfile(join(path, f))]
      videos.sort()
      return videos
 
+# get the filenames of all video files in the given path
 def get_video_names(path):
      videos = [ f for f in listdir(path) if isfile(join(path, f))]
      videos.sort()
@@ -158,6 +160,11 @@ def get_public(path):
     response.headers['Cache-Control'] = 'public, max-age=86400'
     return response
 
+def get_sub_pages(search, video_id, page_length):
+    subs = [{ **sub, 'video_id': video['id']} for video in videos_with_subs for sub in video['subs'] if (normalize_string(search.lower()) in normalize_string(sub['text'].lower()) if search else True) and (video_id == video['id'] if video_id is not None else True)]
+    sub_pages = [subs[x:x+page_length] for x in range(0, len(subs), page_length)]
+    return sub_pages
+
 # Shows the main UI
 @app.route("/")
 def get_index():
@@ -165,16 +172,14 @@ def get_index():
     video_id = request.args.get("video", None, type=int)
     page = request.args.get("page", 0, type=int)
     page_length = request.args.get("page_length", 50, type=int)
-    subs = [{ **sub, 'video_id': video['id']} for video in videos_with_subs for sub in video['subs'] if (normalize_string(search.lower()) in normalize_string(sub['text'].lower()) if search else True) and (video_id == video['id'] if video_id is not None else True)]
-    subs_paginated = [subs[x:x+page_length] for x in range(0, len(subs), page_length)]
-
-    subs_paginated_page = subs_paginated[page] if subs else []
+    sub_pages = get_sub_pages(search, video_id, page_length)
+    subs_from_page = sub_pages[page] if sub_pages else []
 
     hx_request = request.headers.get("HX-Request")
     if hx_request is None:
-        return cached_render_template("index.html", videos=videos_with_subs, subs=subs_paginated_page, pages=subs_paginated, show_name=showName)
+        return cached_render_template("index_with_root.html", videos=videos_with_subs, subs=subs_from_page, pages=sub_pages, show_name=showName, sub_data=None, gif_url=None)
     else:
-        return cached_render_template("sublist.html", videos=videos_with_subs, subs=subs_paginated_page, pages=subs_paginated, show_name=showName)
+        return cached_render_template("index.html", videos=videos_with_subs, subs=subs_from_page, pages=sub_pages, show_name=showName, sub_data=None, gif_url=None)
 
 # Creates the GIF settings that is shown at the bottom of the page
 # to prevent XSS attacks, user input MUST not be shown unless sanitized
@@ -197,7 +202,19 @@ def get_sub(video_id, sub_id):
         'font_type': font.as_posix(),
         'font_size': 20,
     }
-    return cached_render_template("settings.html", sub=sub_data)
+
+    search = request.args.get("q")
+    page = request.args.get("page", 0, type=int)
+    page_length = request.args.get("page_length", 50, type=int)
+    sub_pages = get_sub_pages(search, int(video_id), page_length)
+    subs_from_page = sub_pages[page] if subs else []
+
+    hx_request = request.headers.get("HX-Request")
+    if hx_request is None:
+        return cached_render_template("index_with_root.html", videos=videos_with_subs, subs=subs_from_page, pages=sub_pages, show_name=showName, sub_data=sub_data, gif_url=None)
+    else:
+        return cached_render_template("index.html", videos=videos_with_subs, subs=subs_from_page, pages=sub_pages, show_name=showName, sub_data=sub_data, gif_url=None)
+
 
 # Creates the GIF image when submitting the GIF settings form
 @app.route("/gif_view")

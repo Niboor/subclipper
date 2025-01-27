@@ -1,5 +1,8 @@
 {% if url is none %}
-    <h3>GIF will appear here</h3>
+    <div class="text-lg text-base-content font-semibold w-full h-full flex flex-col justify-center items-center">
+        {% include "photo_icon.html" %}
+        <h2>GIF will appear here</h3>
+    </div>
 {% else %}
     <img
         class="gif-image"
