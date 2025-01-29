@@ -30,7 +30,7 @@
         <button
             class="join-item btn {{ 'btn-active' if request.args.get('page') == loop.index0|string or (request.args.get('page') is none and loop.first) else '' }}"
             hx-get="/?page={{ loop.index0 }}"
-            hx-target="#modal-container"
+            hx-target="main"
             hx-replace-url="true"
             hx-ext="preserve-params"
         >
