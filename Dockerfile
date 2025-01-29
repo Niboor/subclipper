@@ -1,12 +1,15 @@
+FROM node:22 AS tailwind
+WORKDIR /tailwind
+
+COPY package.json yarn.lock ./
+COPY public/ ./public
+RUN yarn --frozen-lockfile
+RUN npx @tailwindcss/cli -i public/main.css -o public/tailwind.css
+
 FROM debian:12.8-slim
 
 RUN apt-get update
-RUN apt-get install -y python3 pip git wget xz-utils nodejs npm
-
-RUN npm install --global yarn
-
-RUN yarn --frozen-lockfile
-RUN npx @tailwindcss/cli -i public/main.css -o public/tailwind.css
+RUN apt-get install -y python3 pip git wget xz-utils
 
 # Precompiled latest FFmpeg build
 RUN wget https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2025-01-15-12-55/ffmpeg-N-118315-g4f3c9f2f03-linux64-gpl.tar.xz \
@@ -19,6 +22,7 @@ WORKDIR /app
 COPY app.py requirements.txt ./
 COPY templates ./templates
 COPY public ./public
+COPY --from=tailwind /tailwind/public/tailwind.css ./public/tailwind.css
 RUN pip install --break-system-packages gunicorn && pip install --break-system-packages -r requirements.txt
 
 EXPOSE 8000
