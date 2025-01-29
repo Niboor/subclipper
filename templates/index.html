@@ -3,32 +3,15 @@
 >
     <div
         id="sublist"
-        class="{{ 'flex' if sub_data is none and gif_url is none else 'hidden' }} w-full md:flex flex-col justify-between gap-2"
+        class="w-full flex flex-col justify-between gap-2"
     >
         {% with videos=videos, subs=subs, pages=pages %}
             {% include "sublist.html" %}
         {% endwith %}
     </div>
-    <div class="hidden md:inline divider divider-horizontal"></div>
-    <div
-        class="{{ 'hidden' if sub_data is none and gif_url is none else 'flex' }} md:flex w-full flex-col gap-2"
-    >
-        <div
-            id="settings"
-            class="w-full overflow-auto flex md:flex-1 box-border"
-        >
-            {% with sub=sub_data %}
-                {% include "settings.html" %}
-            {% endwith %}
-        </div>
-        <div class="divider"></div>
-        <div
-            id="gif-view"
-            class="w-full flex md:flex-1 justify-center items-center overflow-auto"
-        >
-            {% with url=gif_url %}
-                {% include "gif_view.html" %}
-            {% endwith %}
-        </div>
+    <div id="modal-container">
+        {% with sub_data=sub_data, url=None, errs=errs %}
+            {% include "tweak_modal.html" %}
+        {% endwith %}
     </div>
 </div>

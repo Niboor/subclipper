@@ -1,13 +1,7 @@
-{% with videos=videos, size='large' %}
+{% with videos=videos %}
     {% include "video_selection_list.html" %}
 {% endwith %}
-<details class="md:hidden dropdown flex flex-row justify-center">
-    <summary class="btn">{{ 'All videos' if request.args.get('video') is none else videos[request.args.get('video')|int].title }}</summary>
-    {% with videos=videos, size='small' %}
-        {% include "video_selection_list.html" %}
-    {% endwith %}
-</details>
-<div class="overflow-auto">
+<div class="h-full overflow-auto">
     {% if subs|length == 0 %}
         <div class="h-full flex justify-center items-center">
             No results found
@@ -18,8 +12,9 @@
                 <li
                     class="list-row hover:bg-base-200 cursor-pointer"
                     hx-get="/sub_form/{{ sub['video_id'] }}/{{ sub['id'] }}"
-                    hx-push-url="true"
-                    hx-target="main"
+                    hx-replace-url="true"
+                    hx-target="#modal-container"
+                    hx-ext="preserve-params"
                 >
                     <div class="flex flex-col items-start">
                         <div class="text-xs uppercase font-semibold opacity-60">{{ videos[sub.video_id].title }}</div>
@@ -35,7 +30,7 @@
         <button
             class="join-item btn {{ 'btn-active' if request.args.get('page') == loop.index0|string or (request.args.get('page') is none and loop.first) else '' }}"
             hx-get="/?page={{ loop.index0 }}"
-            hx-target="main"
+            hx-target="#modal-container"
             hx-replace-url="true"
             hx-ext="preserve-params"
         >
