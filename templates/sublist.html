@@ -1,61 +1,40 @@
-<div class="tab-header">
-    <div
-        name="video"
-        value=""
-        class="tab-header-button {{ 'tab-header-button-selected' if request.args.get('video') is none else '' }}"
-        hx-get="/"
-        hx-trigger="click"
-        hx-target="#sublist"
-        hx-replace-url="true"
-        hx-include="[name='q']"
-    >
-        All videos
-    </div>
-    {% for video in videos %}
-        <div
-            name="video"
-            value="{{ video.id }}"
-            class="tab-header-button {{ 'tab-header-button-selected' if request.args.get('video') == video.id|string else '' }}"
-            hx-get="/?video={{ video['id'] }}"
-            hx-trigger="click"
-            hx-target="#sublist"
-            hx-replace-url="true"
-            hx-include="[name='q']"
-        >
-            {{ video.title }}
-        </div>
-    {% endfor %}
-</div>
-<div class="clickable-list-container">
+{% with videos=videos %}
+    {% include "video_selection_list.html" %}
+{% endwith %}
+<div class="h-full overflow-auto">
     {% if subs|length == 0 %}
-        <div class="empty-list">
+        <div class="h-full flex justify-center items-center">
             No results found
         </div>
     {% else %}
-        <ul class="clickable-list">
+        <ul class="list bg-base-100 rounded-box shadow-md">
             {% for sub in subs %}
                 <li
-                    class="clickable-list-item"
+                    class="list-row hover:bg-base-200 cursor-pointer"
                     hx-get="/sub_form/{{ sub['video_id'] }}/{{ sub['id'] }}"
-                    hx-target="#settings"
+                    hx-replace-url="true"
+                    hx-target="#modal-container"
+                    hx-ext="preserve-params"
                 >
-                    <b><i>{{ videos[sub.video_id].title }}</b></i>
-                    {{ sub.text }}
+                    <div class="flex flex-col items-start">
+                        <div class="text-xs uppercase font-semibold opacity-60">{{ videos[sub.video_id].title }}</div>
+                        <div>{{ sub.text }}</div>
+                    </div>
                 </li>
             {% endfor %}
         </ul>
     {% endif %}
 </div>
-<div class="pagination-footer">
+<div class="join flex flex-row justify-safe-center min-h-12 overflow-x-auto">
     {% for page in pages %}
-        <div
-            class="pagination-button {{ 'pagination-button-selected' if request.args.get('page') == loop.index0|string or (request.args.get('page') is none and loop.first) else '' }}"
+        <button
+            class="join-item btn {{ 'btn-active' if request.args.get('page') == loop.index0|string or (request.args.get('page') is none and loop.first) else '' }}"
             hx-get="/?page={{ loop.index0 }}"
-            hx-target="#sublist"
+            hx-target="main"
             hx-replace-url="true"
             hx-ext="preserve-params"
         >
             {{ loop.index }}
-        </div>
+        </button>
     {% endfor %}
 </div>

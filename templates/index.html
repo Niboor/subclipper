@@ -1,43 +1,17 @@
-{% extends "layout.html" %}
-{% block content %}
-    <div class="content">
-        <div class="header">
-            {{ show_name }} GIF generator
-        </div>
-        <div id="search">
-            <input
-                id="search"
-                name="q"
-                type="search"
-                placeholder="Search for a subtitle..."
-                value="{{ request.args.get('q') or '' }}"
-                hx-get="/"
-                hx-trigger="search, keyup delay:200ms changed"
-                hx-target="#sublist"
-                hx-replace-url="true"
-                hx-vals="js:{video: new URLSearchParams(window.location.search).get('video')}"
-                style="width: 100%;"
-            />
-        </div>
-        <div id="sublist">
-            {% with videos=videos, subs=subs, pages=pages %}
-                {% include "sublist.html" %}
-            {% endwith %}
-        </div>
-        <div id="below">
-            <div id="settings">
-                {% with sub=None %}
-                    {% include "settings.html" %}
-                {% endwith %}
-            </div>
-            <div id="gif-view">
-                {% with url=None %}
-                    {% include "gif_view.html" %}
-                {% endwith %}
-            </div>
-        </div>
-        <div id="footer">
-            All rights to "{{ show_name }}" are reserved by their respective owners. Made using <a href=https://github.com/Niboor/subclipper/>Subclipper</a>
-        </div>
+<div
+    class="w-full h-full flex flex-row justify-between"
+>
+    <div
+        id="sublist"
+        class="w-full flex flex-col justify-between gap-2"
+    >
+        {% with videos=videos, subs=subs, pages=pages %}
+            {% include "sublist.html" %}
+        {% endwith %}
     </div>
-{% endblock %}
+    <div id="modal-container">
+        {% with sub_data=sub_data, url=None, errs=errs %}
+            {% include "tweak_modal.html" %}
+        {% endwith %}
+    </div>
+</div>

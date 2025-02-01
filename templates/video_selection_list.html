@@ -1,0 +1,37 @@
+<details class="w-full dropdown flex flex-row justify-center">
+    <summary class="btn">Include: {{ 'All videos' if request.args.get('video') is none else videos[request.args.get('video')|int].title }}</summary>
+    <ul
+        class="w-full menu dropdown-content bg-base-200 rounded-box min-h-12 shadow-sm"
+    >
+        <li
+            name="video"
+            value=""
+            hx-get="/"
+            hx-trigger="click"
+            hx-target="main"
+            hx-replace-url="true"
+            hx-include="[name='q']"
+        >
+            <a
+                class="{{ 'menu-active' if request.args.get('video') is none else '' }}"
+            >
+                All videos
+            </a>
+        </li>
+        {% for video in videos %}
+            <li
+                name="video"
+                value="{{ video.id }}"
+                hx-get="/?video={{ video['id'] }}"
+                hx-trigger="click"
+                hx-target="main"
+                hx-replace-url="true"
+                hx-include="[name='q']"
+            >
+                <a class="{{ 'menu-active' if request.args.get('video') == video.id|string else '' }}">
+                    {{ video.title }}
+                </a>
+            </li>
+        {% endfor %}
+    </ul>
+</details>
