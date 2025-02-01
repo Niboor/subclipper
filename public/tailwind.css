@@ -1653,6 +1653,9 @@
   .bg-base-200 {
     background-color: var(--color-base-200);
   }
+  .p-0 {
+    padding: calc(var(--spacing) * 0);
+  }
   .text-3xl {
     font-size: var(--text-3xl);
     line-height: var(--tw-leading, var(--text-3xl--line-height));
@@ -1682,6 +1685,20 @@
   }
   .uppercase {
     text-transform: uppercase;
+  }
+  .btn-link {
+    text-decoration-line: underline;
+    outline-color: currentColor;
+    --btn-border: transparent;
+    --btn-bg: transparent;
+    --btn-fg: var(--color-primary);
+    --btn-noise: none;
+    --btn-shadow: "";
+    &:is(.btn-active, :hover, :active:focus, :focus-visible) {
+      text-decoration-line: underline;
+      --btn-border: transparent;
+      --btn-bg: transparent;
+    }
   }
   .opacity-60 {
     opacity: 60%;
