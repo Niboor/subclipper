@@ -1,11 +1,13 @@
 <dialog
+        id="tweak-modal"
         class="modal"
         {% if sub_data is not none %}
             open
         {% endif %}
         hx-trigger="keyup[key=='Escape'] from:body"
         hx-get="/"
-        hx-target="main"
+        hx-target="#tweak-modal"
+        hx-swap="delete"
         hx-replace-url="true"
         hx-ext="preserve-params"
     >
@@ -16,7 +18,8 @@
             <button
                 class="btn btn-lg md:btn-md btn-circle btn-ghost absolute right-2 top-2"
                 hx-get="/"
-                hx-target="main"
+                hx-target="#tweak-modal"
+                hx-swap="delete"
                 hx-replace-url="true"
                 hx-ext="preserve-params"
             >
@@ -44,7 +47,8 @@
     <form method="dialog" class="modal-backdrop">
         <button
             hx-get="/"
-            hx-target="main"
+            hx-target="#tweak-modal"
+            hx-swap="delete"
             hx-replace-url="true"
             hx-ext="preserve-params"
         >

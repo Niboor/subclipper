@@ -180,9 +180,9 @@ def get_index():
 
     hx_request = request.headers.get("HX-Request")
     if hx_request is None:
-        return cached_render_template("index_with_root.html", videos=videos_with_subs, subs=subs_from_page, pages=sub_pages, show_name=showName, sub_data=None)
+        return cached_render_template("index_with_root.html", videos=videos_with_subs, subs=subs_from_page, pages=sub_pages, show_name=showName, sub_data=None, url=None)
     else:
-        return cached_render_template("index.html", videos=videos_with_subs, subs=subs_from_page, pages=sub_pages, show_name=showName, sub_data=None)
+        return cached_render_template("index.html", videos=videos_with_subs, subs=subs_from_page, pages=sub_pages, show_name=showName, sub_data=None, url=None)
 
 def get_sub_data_by_id(video_id, sub_id):
     video = [video for video in videos_with_subs if video['id'] == int(video_id)]
@@ -223,9 +223,9 @@ def get_sub(video_id, sub_id):
 
     hx_request = request.headers.get("HX-Request")
     if hx_request is None:
-        return cached_render_template("index_with_root.html", videos=videos_with_subs, subs=subs_from_page, pages=sub_pages, show_name=showName, sub_data=sub_data)
+        return cached_render_template("index_with_root.html", videos=videos_with_subs, subs=subs_from_page, pages=sub_pages, show_name=showName, sub_data=sub_data, url=None)
     else:
-        return cached_render_template("tweak_modal.html", sub_data=sub_data)
+        return cached_render_template("tweak_modal.html", sub_data=sub_data, url=None)
 
 # Creates the GIF image when submitting the GIF settings form
 @app.route("/gif_view")
@@ -268,12 +268,12 @@ def get_gif_view():
             'boomerang': boomerang,
         }
         if hx_request is None:
-            return cached_render_template("index_with_root.html", videos=videos_with_subs, subs=subs_from_page, pages=sub_pages, show_name=showName, sub_data=sub_data, errs=errs), 400
+            return cached_render_template("index_with_root.html", videos=videos_with_subs, subs=subs_from_page, pages=sub_pages, show_name=showName, sub_data=sub_data, errs=errs, url=None), 400
         else:
-            return cached_render_template("settings.html", errs=errs, sub=sub_data), 400
+            return cached_render_template("settings.html", errs=errs, sub=sub_data, url=None), 400
     else:
         if hx_request is None:
-            return cached_render_template("index_with_root.html", videos=videos_with_subs, subs=subs_from_page, pages=sub_pages, show_name=showName, sub_data=sub_data)
+            return cached_render_template("index_with_root.html", videos=videos_with_subs, subs=subs_from_page, pages=sub_pages, show_name=showName, sub_data=sub_data, url=None)
         else:
             return cached_render_template("gif_view.html", url="/gif?{}".format(request.query_string.decode()))
 

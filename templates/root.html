@@ -35,7 +35,7 @@
                     hx-trigger="search, keyup delay:200ms changed"
                     hx-target="main"
                     hx-replace-url="true"
-                    hx-vals="js:{video: new URLSearchParams(window.location.search).get('video')}"
+                    hx-ext="preserve-params"
                     style="width: 100%;"
                 />
             </label>

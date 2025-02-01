@@ -7,9 +7,12 @@ htmx.defineExtension(`preserve-params`, {
             const currentSearchParams = new URLSearchParams(window.location.search)
             const nextSearchParams = new URLSearchParams(params);
             const keys = new Set([...currentSearchParams.keys(), ...nextSearchParams.keys()])
+            const excludeKeys = new Set(new URLSearchParams(event.detail.formData).keys())
             const newSearchParams = new URLSearchParams()
             keys.forEach(key => {
-                newSearchParams.set(key, nextSearchParams.get(key) ?? currentSearchParams.get(key))
+                if(!excludeKeys.has(key)) {
+                    newSearchParams.set(key, nextSearchParams.get(key) ?? currentSearchParams.get(key))
+                }
             })
             event.detail.path = `${path}?${newSearchParams.toString()}`
         }
