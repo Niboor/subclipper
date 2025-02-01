@@ -3,6 +3,7 @@ WORKDIR /tailwind
 
 COPY package.json yarn.lock ./
 COPY public/ ./public
+COPY templates ./templates
 RUN yarn --frozen-lockfile
 RUN npx @tailwindcss/cli -i public/main.css -o public/tailwind.css
 
@@ -12,11 +13,11 @@ RUN apt-get update
 RUN apt-get install -y python3 pip git wget xz-utils
 
 # Precompiled latest FFmpeg build
-RUN wget https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2025-01-15-12-55/ffmpeg-N-118315-g4f3c9f2f03-linux64-gpl.tar.xz \
-    && tar xvf ffmpeg-N-118315-g4f3c9f2f03-linux64-gpl.tar.xz \
-    && mv ffmpeg-N-118315-g4f3c9f2f03-linux64-gpl/bin/ffmpeg /usr/local/bin/ \
-    && mv ffmpeg-N-118315-g4f3c9f2f03-linux64-gpl/bin/ffprobe /usr/local/bin/ \
-    && rm -rf ffmpeg-N-118315-g4f3c9f2f03-linux64-gpl*
+RUN wget https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2025-02-01-12-57/ffmpeg-N-118389-gc6194b50b1-linux64-gpl.tar.xz \
+    && tar xvf ffmpeg-N-118389-gc6194b50b1-linux64-gpl.tar.xz \
+    && mv ffmpeg-N-118389-gc6194b50b1-linux64-gpl/bin/ffmpeg /usr/local/bin/ \
+    && mv ffmpeg-N-118389-gc6194b50b1-linux64-gpl/bin/ffprobe /usr/local/bin/ \
+    && rm -rf ffmpeg-N-118389-gc6194b50b1-linux64-gpl*
 
 WORKDIR /app
 COPY app.py requirements.txt ./
