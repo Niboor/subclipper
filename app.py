@@ -214,11 +214,12 @@ def get_sub_data_by_id(video_id, sub_id):
 @app.route("/sub_form/<video_id>/<sub_id>")
 def get_sub(video_id, sub_id):
     sub_data = get_sub_data_by_id(video_id, sub_id)
+    video_id = request.args.get("video", None, type=int)
 
     search = request.args.get("q")
     page = request.args.get("page", 0, type=int)
     page_length = request.args.get("page_length", 50, type=int)
-    sub_pages = get_sub_pages(search, int(video_id), page_length)
+    sub_pages = get_sub_pages(search, video_id, page_length)
     subs_from_page = sub_pages[page] if subs else []
 
     hx_request = request.headers.get("HX-Request")
@@ -243,15 +244,7 @@ def get_gif_view():
     colour = request.args.get('colour', False, type=bool)
     errs = find_request_errors(start_time, end_time, text, crop, resolution, episode, caption, font_size)
 
-    search = request.args.get("q")
-    page = request.args.get("page", 0, type=int)
-    page_length = request.args.get("page_length", 50, type=int)
-    sub_pages = get_sub_pages(search, int(episode), page_length)
-    subs_from_page = sub_pages[page] if subs else []
-
-    hx_request = request.headers.get("HX-Request")
     if errs:
-        print(boomerang)
         sub_data = {
             'id': sub_id,
             'episode': episode,
@@ -267,15 +260,8 @@ def get_gif_view():
             'crop': crop,
             'boomerang': boomerang,
         }
-        if hx_request is None:
-            return cached_render_template("index_with_root.html", videos=videos_with_subs, subs=subs_from_page, pages=sub_pages, show_name=showName, sub_data=sub_data, errs=errs, url=None), 400
-        else:
-            return cached_render_template("settings.html", errs=errs, sub=sub_data, url=None), 400
-    else:
-        if hx_request is None:
-            return cached_render_template("index_with_root.html", videos=videos_with_subs, subs=subs_from_page, pages=sub_pages, show_name=showName, sub_data=sub_data, url=None)
-        else:
-            return cached_render_template("gif_view.html", url="/gif?{}".format(request.query_string.decode()))
+        return cached_render_template("settings.html", errs=errs, sub=sub_data, url=None), 400
+    else: return cached_render_template("gif_view.html", url="/gif?{}".format(request.query_string.decode()))
 
 # Returns subs as JSON. This is not used in the UI
 @app.route("/subs")
