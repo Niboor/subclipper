@@ -121,7 +121,7 @@ def find_font():
 
 def normalize_string(s):
     return ''.join(
-        c for c in unicodedata.normalize('NFD', s)
+        c for c in unicodedata.normalize('NFD', s.replace('\\n', ' '))
         if unicodedata.category(c) != 'Mn'
     )
 
