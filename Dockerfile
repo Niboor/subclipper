@@ -13,11 +13,14 @@ RUN apt-get update
 RUN apt-get install -y python3 pip git wget xz-utils
 
 # Precompiled latest FFmpeg build
-RUN wget https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2025-02-01-12-57/ffmpeg-N-118389-gc6194b50b1-linux64-gpl.tar.xz \
-    && tar xvf ffmpeg-N-118389-gc6194b50b1-linux64-gpl.tar.xz \
-    && mv ffmpeg-N-118389-gc6194b50b1-linux64-gpl/bin/ffmpeg /usr/local/bin/ \
-    && mv ffmpeg-N-118389-gc6194b50b1-linux64-gpl/bin/ffprobe /usr/local/bin/ \
-    && rm -rf ffmpeg-N-118389-gc6194b50b1-linux64-gpl*
+## Note: Autobuilds from BtbN get removed after 14days, except the last build of each month; those stay available for 2 years.
+ARG FFMPEG_BUILD_DATETIME="2024-08-31-12-50"
+ARG FFMPEG_BUILD="116806-g4c0372281b" 
+RUN wget https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-${FFMPEG_BUILD_DATETIME}/ffmpeg-N-${FFMPEG_BUILD}-linux64-gpl.tar.xz \
+	&& tar xvf ffmpeg-N-${FFMPEG_BUILD}-linux64-gpl.tar.xz \
+	&& mv ffmpeg-N-${FFMPEG_BUILD}-linux64-gpl/bin/ffmpeg /usr/local/bin/ \
+	&& mv ffmpeg-N-${FFMPEG_BUILD}-linux64-gpl/bin/ffprobe /usr/local/bin/ \
+	&& rm -rf ffmpeg-N-${FFMPEG_BUILD}-linux64-gpl*
 
 WORKDIR /app
 COPY app.py requirements.txt ./
