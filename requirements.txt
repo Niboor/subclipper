@@ -23,6 +23,6 @@ pysubs2==1.8.0
 python-dateutil==2.9.0.post0
 python-ffmpeg==2.0.12
 six==1.17.0
-sub2clip @ git+https://github.com/lpalinckx/sub2clip.git@b1058d9a6b1e4b3edd78963b47f5fec581fb0bb7
+sub2clip @ git+https://github.com/lpalinckx/sub2clip.git@be5ad51580a9435738a247283759ddd719855bf2
 typing_extensions==4.12.2
 Werkzeug==3.1.3

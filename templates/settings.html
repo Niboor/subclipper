@@ -114,6 +114,36 @@
                 />
             </fieldset>
         </div>
+        <fieldset class="flex gap-3">
+            <legend class="fieldset-legend">Select Format</legend>
+
+            <label class="flex-1">
+                <input
+                    type="radio"
+                    name="format"
+                    value="webp"
+                    class="peer hidden"
+                    checked
+                />
+                <div class="w-full rounded-lg border-2 border-base-300 px-4 py-2 text-center text-sm font-bold transition peer-checked:bg-blue-800 peer-checked:border-base-100 peer-checked:text-primary-content">
+                    WEBP
+                </div>
+            </label>
+
+            <label class="flex-1">
+                <input
+                    type="radio"
+                    name="format"
+                    value="gif"
+                    class="peer hidden"
+                />
+                <div class="w-full rounded-lg border-2 border-base-300 px-4 py-2 text-center text-sm font-bold transition peer-checked:bg-blue-800 peer-checked:border-base-100 peer-checked:text-primary-content">
+                    GIF
+                </div>
+            </label>
+        </fieldset>
+
+
         <fieldset>
             <legend class="fieldset-legend">Caption</legend>
             <input
@@ -130,7 +160,7 @@
             class="btn btn-primary"
             type="submit"
         >
-            Generate GIF
+            Generate
         </button>
     </form>
 {% endif %}
