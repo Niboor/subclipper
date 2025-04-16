@@ -11,12 +11,13 @@ DOCKER_TAG = latest
 SEARCH_PATH = $(shell pwd)/subclipper/samples
 SHOW_NAME = Subclipper Test
 
-.PHONY: help venv install test run docker-build docker-run clean
+.PHONY: help venv install test run docker-build docker-run clean tailwind
 
 help:
 	@echo "Available targets:"
 	@echo "  venv          - Create Python virtual environment"
 	@echo "  install       - Install Python dependencies"
+	@echo "  tailwind      - Install and compile Tailwind CSS"
 	@echo "  test          - Run tests"
 	@echo "  run           - Start development server"
 	@echo "  docker-build  - Build Docker image"
@@ -34,12 +35,19 @@ install: venv
 	$(PIP) install -e ".[dev]"
 	@echo "Dependencies installed."
 
+# Tailwind CSS targets
+tailwind:
+	@echo "Installing Tailwind CSS dependencies..."
+	yarn
+	@echo "Compiling Tailwind CSS..."
+	npx @tailwindcss/cli -i subclipper/app/static/main.css -o subclipper/app/static/tailwind.css
+
 # Development targets
 test:
 	@echo "Running tests..."
 	$(PYTHON) -m pytest subclipper/tests/ -v
 
-run:
+run: tailwind
 	@echo "Starting development server..."
 	FLASK_APP=subclipper.app \
 	FLASK_ENV=development \
@@ -66,6 +74,8 @@ clean:
 	rm -rf *.egg-info
 	rm -rf __pycache__
 	rm -rf .pytest_cache
+	rm -rf node_modules
+	rm -rf yarn.lock
 	find . -type d -name "__pycache__" -exec rm -rf {} +
 	find . -type f -name "*.pyc" -delete
 	@echo "Cleanup complete."
