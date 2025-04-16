@@ -1,2 +1,0 @@
-[console_scripts]
-subclipper = subclipper.__main__:main

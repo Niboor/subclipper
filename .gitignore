@@ -7,3 +7,4 @@ share/
 include/
 pyvenv.cfg
 node_modules/
+*.egg-info/
