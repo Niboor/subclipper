@@ -2,10 +2,10 @@ FROM node:22 AS tailwind
 WORKDIR /tailwind
 
 COPY package.json yarn.lock ./
-COPY public/ ./public
-COPY templates ./templates
+COPY subclipper/app/static ./subclipper/app/static
+COPY subclipper/app/templates ./subclipper/app/templates
 RUN yarn --frozen-lockfile
-RUN npx @tailwindcss/cli -i public/main.css -o public/tailwind.css
+RUN npx @tailwindcss/cli -i subclipper/app/static/main.css -o subclipper/app/static/tailwind.css
 
 FROM debian:12.8-slim
 
@@ -23,12 +23,10 @@ RUN wget https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-${FFM
 	&& rm -rf ffmpeg-N-${FFMPEG_BUILD}-linux64-gpl*
 
 WORKDIR /app
-COPY app.py requirements.txt ./
-COPY templates ./templates
-COPY public ./public
-COPY --from=tailwind /tailwind/public/tailwind.css ./public/tailwind.css
-RUN pip install --break-system-packages gunicorn && pip install --break-system-packages -r requirements.txt
+COPY . .
+COPY --from=tailwind /tailwind/subclipper/app/static/tailwind.css ./subclipper/app/static/tailwind.css
+RUN pip install --break-system-packages gunicorn && pip install --break-system-packages -e .
 
 EXPOSE 8000
 
-CMD ["gunicorn", "app:app", "--log-level", "debug", "-b", ":8000", "--preload"]
+CMD ["gunicorn", "subclipper.app:create_app()", "--log-level", "debug", "-b", ":8000", "--preload"]
