@@ -18,7 +18,7 @@ def get_system_font():
 
 @pytest.fixture
 def sample_video_path():
-    return Path(__file__).parent / "sample.mp4"
+    return Path(__file__).parent.parent / "samples" / "sample.mp4"
 
 @pytest.fixture
 def system_font_path():
@@ -41,12 +41,12 @@ def test_load_videos(video_processor, sample_video_path):
         assert video.path == sample_video_path
         assert len(video.subs) == 5  # Check for exactly 5 subtitles
 
-def test_search_subtitles(video_processor):
+def test_search_subtitles(video_processor, sample_video_path):
     # Create test data
     video = Video(
         id=0,
         title="sample",
-        path=Path(__file__).parent / "sample.mp4",
+        path=sample_video_path,
         subs=[
             Subtitle(id=0, start=0, end=1, text="Hello world", video_id=0),
             Subtitle(id=1, start=1, end=2, text="Goodbye world", video_id=0)
@@ -67,12 +67,12 @@ def test_search_subtitles(video_processor):
     results = video_processor.search_subtitles("nonexistent")
     assert len(results) == 0
 
-def test_generate_clip(video_processor, system_font_path):
+def test_generate_clip(video_processor, system_font_path, sample_video_path):
     # Create test data
     video = Video(
         id=0,
         title="sample",
-        path=Path(__file__).parent / "sample.mp4",
+        path=sample_video_path,
         subs=[]
     )
     video_processor._videos = [video]
@@ -93,7 +93,7 @@ def test_generate_clip(video_processor, system_font_path):
         font_path=system_font_path
     )
     
-    with patch('subs.subs.generate_video') as mock_generate_video:
+    with patch('subclipper.core.video_processor.generate_video') as mock_generate_video:
         mock_generate_video.return_value = (None, True)
         output_path, error = video_processor.generate_clip(settings)
         assert error is None
@@ -105,12 +105,12 @@ def test_generate_clip(video_processor, system_font_path):
     assert error is not None
     assert output_path is None
 
-def test_generate_clip_error_handling(video_processor, system_font_path):
+def test_generate_clip_error_handling(video_processor, system_font_path, sample_video_path):
     # Create test data
     video = Video(
         id=0,
         title="sample",
-        path=Path(__file__).parent / "sample.mp4",
+        path=sample_video_path,
         subs=[]
     )
     video_processor._videos = [video]
