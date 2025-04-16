@@ -40,7 +40,7 @@ tailwind:
 	@echo "Installing Tailwind CSS dependencies..."
 	yarn
 	@echo "Compiling Tailwind CSS..."
-	npx @tailwindcss/cli -i subclipper/app/static/main.css -o subclipper/app/static/tailwind.css
+	npx tailwindcss -i ./subclipper/app/static/main.css -o ./subclipper/app/static/tailwind.css
 
 # Development targets
 test:
