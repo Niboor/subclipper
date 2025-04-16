@@ -81,7 +81,7 @@
         </div>
         <div class="flex flex-row justify-between gap-4">
             <fieldset>
-                <legend class="fieldset-legend">Square GIF (crop)</legend>
+                <legend class="fieldset-legend">Square (crop)</legend>
                 <input
                     class="checkbox"
                     name="crop"
@@ -92,7 +92,7 @@
                 />
             </fieldset>
             <fieldset>
-                <legend class="fieldset-legend">Boomerang GIF (loop)</legend>
+                <legend class="fieldset-legend">Boomerang (loop)</legend>
                 <input
                     class="checkbox"
                     name="boomerang"
@@ -105,15 +105,48 @@
             <fieldset>
                 <legend class="fieldset-legend">Better colours</legend>
                 <input
-                    class="checkbox"
+                    class="checkbox transition"
                     name="colour"
                     type="checkbox"
+                    id="gifColours"
                     {% if sub.colour %}
                     checked
                     {% endif %}
                 />
             </fieldset>
         </div>
+        <fieldset class="flex gap-3">
+            <legend class="fieldset-legend">Select Format</legend>
+
+            <label class="flex-1">
+                <input
+                    id="webpRadio"
+                    type="radio"
+                    name="format"
+                    value="webp"
+                    class="peer hidden"
+                    checked
+                />
+                <div class="w-full rounded-lg border-2 border-base-300 px-4 py-2 text-center text-sm font-bold transition peer-checked:bg-blue-800 peer-checked:border-base-100 peer-checked:text-primary-content">
+                    WEBP
+                </div>
+            </label>
+
+            <label class="flex-1">
+                <input
+                    id="gifRadio"
+                    type="radio"
+                    name="format"
+                    value="gif"
+                    class="peer hidden"
+                />
+                <div class="w-full rounded-lg border-2 border-base-300 px-4 py-2 text-center text-sm font-bold transition peer-checked:bg-blue-800 peer-checked:border-base-100 peer-checked:text-primary-content">
+                    GIF
+                </div>
+            </label>
+        </fieldset>
+
+
         <fieldset>
             <legend class="fieldset-legend">Caption</legend>
             <input
@@ -130,7 +163,27 @@
             class="btn btn-primary"
             type="submit"
         >
-            Generate GIF
+            Generate
         </button>
     </form>
+
+    {% block scripts %}
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const webpRadio  = document.getElementById('webpRadio')
+                const gifRadio   = document.getElementById('gifRadio')
+                const gifColours = document.getElementById('gifColours')
+
+                function toggleDisabled() {
+                    gifColours.disabled = webpRadio.checked
+                }
+
+                toggleDisabled()
+
+                webpRadio.addEventListener('change', toggleDisabled)
+                gifRadio.addEventListener('change', toggleDisabled)
+            })
+        </script>
+    {% endblock %}
+
 {% endif %}
