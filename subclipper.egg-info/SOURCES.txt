@@ -1,0 +1,8 @@
+README.md
+setup.py
+subclipper.egg-info/PKG-INFO
+subclipper.egg-info/SOURCES.txt
+subclipper.egg-info/dependency_links.txt
+subclipper.egg-info/entry_points.txt
+subclipper.egg-info/requires.txt
+subclipper.egg-info/top_level.txt

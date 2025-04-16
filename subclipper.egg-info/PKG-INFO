@@ -1,0 +1,14 @@
+Metadata-Version: 2.4
+Name: subclipper
+Version: 0.1.0
+Requires-Dist: flask>=3.1.0
+Requires-Dist: matplotlib>=3.10.1
+Requires-Dist: pillow>=11.1.0
+Requires-Dist: pysubs2>=1.8.0
+Requires-Dist: python-ffmpeg>=2.0.12
+Requires-Dist: sub2clip@ git+https://github.com/lpalinckx/sub2clip.git@be5ad51580a9435738a247283759ddd719855bf2
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0.0; extra == "dev"
+Requires-Dist: pytest-cov>=4.0.0; extra == "dev"
+Dynamic: provides-extra
+Dynamic: requires-dist
