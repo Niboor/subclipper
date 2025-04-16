@@ -75,7 +75,6 @@ clean:
 	rm -rf __pycache__
 	rm -rf .pytest_cache
 	rm -rf node_modules
-	rm -rf yarn.lock
 	find . -type d -name "__pycache__" -exec rm -rf {} +
 	find . -type f -name "*.pyc" -delete
 	@echo "Cleanup complete."
