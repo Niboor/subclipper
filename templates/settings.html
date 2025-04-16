@@ -105,9 +105,10 @@
             <fieldset>
                 <legend class="fieldset-legend">Better colours</legend>
                 <input
-                    class="checkbox"
+                    class="checkbox transition"
                     name="colour"
                     type="checkbox"
+                    id="gifColours"
                     {% if sub.colour %}
                     checked
                     {% endif %}
@@ -119,6 +120,7 @@
 
             <label class="flex-1">
                 <input
+                    id="webpRadio"
                     type="radio"
                     name="format"
                     value="webp"
@@ -132,6 +134,7 @@
 
             <label class="flex-1">
                 <input
+                    id="gifRadio"
                     type="radio"
                     name="format"
                     value="gif"
@@ -163,4 +166,24 @@
             Generate
         </button>
     </form>
+
+    {% block scripts %}
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const webpRadio  = document.getElementById('webpRadio')
+                const gifRadio   = document.getElementById('gifRadio')
+                const gifColours = document.getElementById('gifColours')
+
+                function toggleDisabled() {
+                    gifColours.disabled = webpRadio.checked
+                }
+
+                toggleDisabled()
+
+                webpRadio.addEventListener('change', toggleDisabled)
+                gifRadio.addEventListener('change', toggleDisabled)
+            })
+        </script>
+    {% endblock %}
+
 {% endif %}
