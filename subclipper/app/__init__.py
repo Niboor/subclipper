@@ -4,10 +4,6 @@ from pathlib import Path
 import os
 
 def create_app():
-    # Ensure logs directory exists
-    log_dir = Path('logs')
-    log_dir.mkdir(exist_ok=True)
-
     dictConfig({
         'version': 1,
         'disable_existing_loggers': False,
@@ -39,4 +35,4 @@ def create_app():
     from .routes import bp
     app.register_blueprint(bp)
     
-    return app 
+    return app
