@@ -2,8 +2,6 @@ from flask import Blueprint, render_template, request, send_file, send_from_dire
 from pathlib import Path
 import logging
 from typing import Optional
-import time
-from contextlib import contextmanager
 
 from ..core.models import ClipSettings
 from ..utils.config import Config
@@ -12,15 +10,6 @@ from ..core.video_processor import VideoProcessor
 logger = logging.getLogger(__name__)
 bp = Blueprint('main', __name__)
 config = Config()
-
-@contextmanager
-def log_request():
-    start_time = time.time()
-    try:
-        yield
-    finally:
-        duration = time.time() - start_time
-        logger.info(f"Request completed in {duration:.2f} seconds - {request.method} {request.path}")
 
 def cached_render_template(template, **context):
     """Render a template with caching headers."""
