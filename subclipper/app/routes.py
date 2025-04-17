@@ -49,12 +49,14 @@ def index():
 @bp.route("/sub_form/<video_id>/<sub_id>")
 def get_sub(video_id, sub_id):
     videos = config.video_processor.load_videos()
-    video = next((v for v in videos if v.id == int(video_id)), None)
-    if not video:
+    try:
+        video = videos[int(video_id)]
+    except (IndexError, ValueError):
         return "Video not found", 404
         
-    sub = next((s for s in video.subs if s.id == int(sub_id)), None)
-    if not sub:
+    try:
+        sub = video.subs[int(sub_id)]
+    except (IndexError, ValueError):
         return "Subtitle not found", 404
         
     sub_data = {
