@@ -1,12 +1,12 @@
 {% if not url or url == "none" %}
     <div class="text-lg text-base-content font-semibold w-full h-full flex flex-col justify-center items-center">
         {% include "photo_icon.html" %}
-        <h2>Gif will appear here</h2>
+        <h2>Clip will appear here</h2>
     </div>
 {% else %}
     <img
         class="gif-image"
         src="{{ url }}"
-        alt="The gif is loading..."
+        alt="The clip is loading..."
     />
 {% endif %}
