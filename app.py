@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, send_file, send_from_directory, make_response
-from subs.subs import (extract_subs, generate_gif)
+from subs.subs import (extract_subs, generate_video)
 from os import listdir
 from os.path import isfile, join
 from matplotlib import font_manager
@@ -86,7 +86,7 @@ def subs2json(subs):
         out[idx] = ep_dict
     return json.dumps(out)
 
-def find_request_errors(start_time, end_time, text, crop, resolution, episode, caption, font_size):
+def find_request_errors(start_time, end_time, text, crop, resolution, episode, caption, font_size, frmt):
 
     errs = {}
 
@@ -104,6 +104,8 @@ def find_request_errors(start_time, end_time, text, crop, resolution, episode, c
         errs['caption']='caption too large'
     if font_size > 50:
         errs['font_size']='font size too large'
+    if frmt not in {'gif', 'webp'}:
+        errs['format']='invalid output format, only gif and webp are allowed'
     return errs
 
 #def find_font(name):
@@ -242,7 +244,8 @@ def get_gif_view():
     caption = request.args.get('caption', '', type=str)
     boomerang = request.args.get('boomerang', False, type=bool)
     colour = request.args.get('colour', False, type=bool)
-    errs = find_request_errors(start_time, end_time, text, crop, resolution, episode, caption, font_size)
+    frmt = request.args.get('format', 'webp', type=str)
+    errs = find_request_errors(start_time, end_time, text, crop, resolution, episode, caption, font_size, frmt)
 
     if errs:
         sub_data = {
@@ -259,7 +262,9 @@ def get_gif_view():
             'colour': colour,
             'crop': crop,
             'boomerang': boomerang,
+            'format': frmt
         }
+        logger.warn(errs)
         return cached_render_template("settings.html", errs=errs, sub=sub_data, url=None), 400
     else: return cached_render_template("gif_view.html", url="/gif?{}".format(request.query_string.decode()))
 
@@ -284,19 +289,20 @@ def get_gif():
     caption = request.args.get('caption', '', type=str)
     boomerang = request.args.get('boomerang', False, type=bool)
     colour = request.args.get('colour', False, type=bool)
-    errs = find_request_errors(start_time, end_time, text, crop, resolution, episode, caption, font_size)
+    frmt = request.args.get('format', 'webp', type=str)
+    errs = find_request_errors(start_time, end_time, text, crop, resolution, episode, caption, font_size, frmt)
     if errs:
         logger.warn(f"got invalid request: {errs}")
         return errs, 400
     with tempfile.TemporaryDirectory() as tmp:
         output_clip = os.path.join(tmp, 'clip.mp4')
-        output_gif = os.path.join(tmp, 'clip.gif')
+        output_path = os.path.join(tmp, f'clip.{frmt}')
         video_path = os.path.join(searchPath, video_names[episode])
-        err, ok = generate_gif(
+        err, ok = generate_video(
                 start_time,
                 end_time,
                 output_clip,
-                output_gif,
+                output_path,
                 text,
                 caption,
                 video_path,
@@ -307,10 +313,11 @@ def get_gif():
                 font,
                 font_size,
                 colour,
+                frmt
         )
         if ok:
-            response = send_file(output_gif, mimetype='image/gif')
+            response = send_file(output_path, mimetype=f'image/{frmt}')
             response.headers['Cache-Control'] = 'public, max-age=86400'
             return response
-        logger.warn(f"could not generate GIF: {err}")
+        logger.warn(f"could not generate {frmt}: {err}")
         return err, 500
