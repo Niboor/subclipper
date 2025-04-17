@@ -16,6 +16,23 @@ def cached_render_template(template, **context):
     response = make_response(rendered_template)
     return response
 
+def create_clip_settings_from_request() -> ClipSettings:
+    """Create ClipSettings from the current request's query parameters."""
+    return ClipSettings(
+        start_time=request.args.get('start', 0, type=float),
+        end_time=request.args.get('end', 0, type=float),
+        text=request.args.get('text', '', type=str),
+        crop=request.args.get('crop', False, type=bool),
+        resolution=request.args.get('resolution', 500, type=int),
+        episode_id=request.args.get('episode', -1, type=int),
+        font_size=request.args.get('font_size', 20, type=int),
+        caption=request.args.get('caption', '', type=str),
+        boomerang=request.args.get('boomerang', False, type=bool),
+        colour=request.args.get('colour', False, type=bool),
+        format=request.args.get('format', 'webp', type=str),
+        font_path=config.font_path
+    )
+
 @bp.route("/public/<path:path>")
 def get_public(path):
     """Serve static files from the static directory."""
@@ -82,20 +99,7 @@ def get_sub(video_id, sub_id):
 
 @bp.route("/gif_view")
 def get_gif_view():
-    settings = ClipSettings(
-        start_time=request.args.get('start', 0, type=float),
-        end_time=request.args.get('end', 0, type=float),
-        text=request.args.get('text', '', type=str),
-        crop=request.args.get('crop', False, type=bool),
-        resolution=request.args.get('resolution', 500, type=int),
-        episode_id=request.args.get('episode', -1, type=int),
-        font_size=request.args.get('font_size', 20, type=int),
-        caption=request.args.get('caption', '', type=str),
-        boomerang=request.args.get('boomerang', False, type=bool),
-        colour=request.args.get('colour', False, type=bool),
-        format=request.args.get('format', 'webp', type=str),
-        font_path=config.font_path
-    )
+    settings = create_clip_settings_from_request()
     
     errors = settings.validate()
     if errors:
@@ -105,20 +109,7 @@ def get_gif_view():
 
 @bp.route("/gif")
 def get_gif():
-    settings = ClipSettings(
-        start_time=request.args.get('start', 0, type=float),
-        end_time=request.args.get('end', 0, type=float),
-        text=request.args.get('text', '', type=str),
-        crop=request.args.get('crop', False, type=bool),
-        resolution=request.args.get('resolution', 500, type=int),
-        episode_id=request.args.get('episode', -1, type=int),
-        font_size=request.args.get('font_size', 20, type=int),
-        caption=request.args.get('caption', '', type=str),
-        boomerang=request.args.get('boomerang', False, type=bool),
-        colour=request.args.get('colour', False, type=bool),
-        format=request.args.get('format', 'webp', type=str),
-        font_path=config.font_path
-    )
+    settings = create_clip_settings_from_request()
     
     output_path, error = config.video_processor.generate_clip(settings)
     if error:
