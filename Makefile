@@ -8,8 +8,8 @@ DOCKER_IMAGE = subclipper
 DOCKER_TAG = latest
 
 # Environment variables
-SEARCH_PATH = $(shell pwd)/subclipper/samples
-SHOW_NAME = Subclipper Test
+SEARCH_PATH ?= $(shell pwd)/subclipper/samples
+SHOW_NAME ?= Subclipper Test
 
 .PHONY: help venv install test run docker-build docker-run clean tailwind
 
