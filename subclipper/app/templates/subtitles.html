@@ -1,11 +1,11 @@
 <div
-    class="w-full h-full flex flex-row justify-between"
+    class="w-full h-full flex flex-col"
 >
     <div
         id="sublist"
-        class="w-full flex flex-col justify-between gap-2"
+        class="w-full flex-1 min-h-0 flex flex-col"
     >
-    <div class="h-full overflow-auto">
+    <div class="flex-1 overflow-y-auto">
         {% if subs|length == 0 %}
             <div class="h-full flex justify-center items-center">
                 No results found
@@ -29,7 +29,7 @@
             </ul>
         {% endif %}
     </div>
-    <div class="join flex flex-row justify-safe-center min-h-12 overflow-x-auto">
+    <div class="flex-none join flex flex-row justify-safe-center min-h-12 overflow-x-auto">
         {% for page in pages %}
             <button
                 class="join-item btn {{ 'btn-active' if request.args.get('page') == loop.index0|string or (request.args.get('page') is none and loop.first) else '' }}"

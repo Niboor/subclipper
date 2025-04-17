@@ -16,16 +16,16 @@
 <body
     hx-boost="true"
     hx-ext="response-targets"
-    class="h-full w-full flex flex-col"
+    class="h-screen w-full flex flex-col"
 >
-    <header class="flex-auto">
-        <div class="navbar bg-base-100 shadow-sm flex flex-col md:flex-row">
-            <h1 class="hidden md:flex flex-1 text-3xl">
+    <header class="flex-none">
+        <div class="navbar bg-base-100 shadow-sm flex flex-col md:flex-row !p-0">
+            <h1 class="hidden md:flex flex-1 text-3xl p-2">
                 {{ show_name }} GIF generator
             </h1>
             <div
                 id="search"
-                class="w-full flex flex-1 flex-row justify-center md:p-8"
+                class="w-full flex flex-1 flex-row justify-center p-2"
             >
                 <label class="input">
                     {% include "search_icon.html" %}
@@ -53,7 +53,7 @@
         {% endwith %}
     </header>
     <main
-        class="flex-initial h-full md:p-8"
+        class="flex-1 min-h-0 md:p-8"
         hx-get="/"
         hx-trigger="load"
         hx-include="[name='q']"
@@ -65,7 +65,7 @@
             {% include "tweak_modal.html" %}
         {% endwith %}
     </div>
-    <footer class="flex-auto hidden md:flex footer flex-row justify-center items-center gap-2 w-full sm:footer-horizontal bg-base-200 text-base-content">
+    <footer class="flex-none hidden md:flex footer flex-row justify-center items-center gap-2 w-full sm:footer-horizontal bg-base-200 text-base-content">
         All rights to "{{ show_name }}" are reserved by their respective owners. Made using <a class="btn btn-link flex flex-row items-center p-0" href="https://github.com/Niboor/subclipper">Subclipper</a>
     </footer>
     <div class="toast toast-start">
