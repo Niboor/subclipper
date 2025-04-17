@@ -52,7 +52,7 @@ def index():
     subs_from_page = sub_pages[page] if sub_pages else []
 
     hx_request = request.headers.get("HX-Request")
-    template = "index_with_root.html" if hx_request is None else "index.html"
+    template = "root.html" if hx_request is None else "subtitles.html"
     
     return cached_render_template(
         template,
@@ -61,7 +61,8 @@ def index():
         pages=sub_pages,
         show_name=config.show_name,
         sub_data=None,
-        url=None
+        url=None,
+        oob=hx_request is not None
     )
 
 @bp.route("/sub_form/<video_id>/<sub_id>")
@@ -94,7 +95,7 @@ def get_sub(video_id, sub_id):
     
     hx_request = request.headers.get("HX-Request")
     if hx_request is None:
-        return cached_render_template("index_with_root.html", sub_data=sub_data)
+        return cached_render_template("root.html", sub_data=sub_data, videos=videos)
     else:
         return cached_render_template("tweak_modal.html", sub_data=sub_data)
 
