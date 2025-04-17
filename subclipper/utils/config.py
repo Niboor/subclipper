@@ -1,20 +1,23 @@
 import os
-from pathlib import Path
 import logging
+from pathlib import Path
 import sys
+
+logger = logging.getLogger(__name__)
 
 class Config:
     def __init__(self):
         self.search_path = self._get_required_env('SEARCH_PATH')
         self.show_name = self._get_required_env('SHOW_NAME')
         self.font_path = self._find_font()
+        logger.info(f"Initialized Config with search_path: {self.search_path}, show_name: {self.show_name}, font_path: {self.font_path}")
         self._video_processor = None
         
     def _get_required_env(self, name: str) -> Path:
         """Get a required environment variable and convert it to a Path."""
         value = os.getenv(name)
         if value is None:
-            logging.error(f"{name} has not been configured. Set the {name} env var")
+            logger.error(f"{name} has not been configured. Set the {name} env var")
             sys.exit(4)
         return Path(value)
         

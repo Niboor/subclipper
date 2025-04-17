@@ -1,14 +1,26 @@
-from flask import Blueprint, render_template, request, send_file, send_from_directory, make_response
+from flask import Blueprint, render_template, request, send_file, send_from_directory, make_response, jsonify, current_app
 from pathlib import Path
 import logging
 from typing import Optional
+import time
+from contextlib import contextmanager
 
 from ..core.models import ClipSettings
 from ..utils.config import Config
+from ..core.video_processor import VideoProcessor
 
 logger = logging.getLogger(__name__)
 bp = Blueprint('main', __name__)
 config = Config()
+
+@contextmanager
+def log_request():
+    start_time = time.time()
+    try:
+        yield
+    finally:
+        duration = time.time() - start_time
+        logger.info(f"Request completed in {duration:.2f} seconds - {request.method} {request.path}")
 
 def cached_render_template(template, **context):
     """Render a template with caching headers."""
@@ -129,4 +141,74 @@ def get_gif():
                 (tmp_dir / 'clip.mp4').unlink(missing_ok=True)
                 tmp_dir.rmdir()
             except Exception as e:
-                logger.warning(f"Failed to clean up temporary files: {e}") 
+                logger.warning(f"Failed to clean up temporary files: {e}")
+
+@bp.route('/videos', methods=['GET'])
+def get_videos():
+    with log_request():
+        try:
+            logger.debug("Fetching list of videos")
+            processor = current_app.config['VIDEO_PROCESSOR']
+            videos = processor.load_videos()
+            return jsonify([{
+                'id': v.id,
+                'title': v.title,
+                'subtitle_count': len(v.subs)
+            } for v in videos])
+        except Exception as e:
+            logger.exception("Failed to fetch videos")
+            return jsonify({'error': 'Failed to fetch videos'}), 500
+
+@bp.route('/search', methods=['GET'])
+def search_subtitles():
+    with log_request():
+        try:
+            query = request.args.get('q')
+            video_id = request.args.get('video_id', type=int)
+            logger.debug(f"Searching subtitles with query: {query}, video_id: {video_id}")
+            
+            processor = current_app.config['VIDEO_PROCESSOR']
+            results = processor.search_subtitles(query, video_id)
+            return jsonify([{
+                'id': r.id,
+                'start': r.start,
+                'end': r.end,
+                'text': r.text,
+                'video_id': r.video_id
+            } for r in results])
+        except Exception as e:
+            logger.exception("Failed to search subtitles")
+            return jsonify({'error': 'Failed to search subtitles'}), 500
+
+@bp.route('/generate', methods=['POST'])
+def generate_clip():
+    with log_request():
+        try:
+            data = request.get_json()
+            logger.debug(f"Generating clip with settings: {data}")
+            
+            settings = ClipSettings(
+                episode_id=data['episode_id'],
+                start_time=data['start_time'],
+                end_time=data['end_time'],
+                text=data.get('text'),
+                caption=data.get('caption'),
+                crop=data.get('crop', False),
+                boomerang=data.get('boomerang', False),
+                resolution=data.get('resolution', '720p'),
+                font_size=data.get('font_size', 24),
+                colour=data.get('colour', '#FFFFFF'),
+                format=data.get('format', 'mp4')
+            )
+            
+            processor = current_app.config['VIDEO_PROCESSOR']
+            output_path, error = processor.generate_clip(settings)
+            
+            if error:
+                logger.error(f"Failed to generate clip: {error}")
+                return jsonify({'error': error}), 400
+                
+            return jsonify({'path': str(output_path)})
+        except Exception as e:
+            logger.exception("Failed to generate clip")
+            return jsonify({'error': 'Failed to generate clip'}), 500 
