@@ -13,7 +13,7 @@ config = Config()
 
 def cached_render_template(template, **context):
     """Render a template with caching headers."""
-    rendered_template = render_template(template, **context)
+    rendered_template = render_template(template, show_name=config.show_name, **context)
     response = make_response(rendered_template)
     return response
 
@@ -59,7 +59,6 @@ def index():
         videos=videos,
         subs=subs_from_page,
         pages=sub_pages,
-        show_name=config.show_name,
         sub_data=None,
         url=None,
         oob=hx_request is not None
