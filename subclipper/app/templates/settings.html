@@ -178,10 +178,16 @@
                     gifColours.disabled = webpRadio.checked
                 }
 
+                // Initial state
                 toggleDisabled()
 
+                // Add change event listeners
                 webpRadio.addEventListener('change', toggleDisabled)
                 gifRadio.addEventListener('change', toggleDisabled)
+
+                // Also add click event listeners as a backup
+                webpRadio.addEventListener('click', toggleDisabled)
+                gifRadio.addEventListener('click', toggleDisabled)
             })
         </script>
     {% endblock %}
