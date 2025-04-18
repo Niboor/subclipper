@@ -120,7 +120,7 @@ class VideoProcessor:
 
                 if ok:
                     return output_path, None
-                raise Exception(err)
+                return None, err
         except Exception as e:
             logger.exception("Failed to generate clip")
             raise
