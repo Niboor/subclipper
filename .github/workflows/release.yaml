@@ -43,6 +43,9 @@ jobs:
         uses: actions/checkout@v4
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+      - name: Create cache directory
+        run: |
+          mkdir -p /tmp/.buildx-cache
       - name: Cache Docker layers
         uses: actions/cache@v3
         with:
@@ -83,6 +86,11 @@ jobs:
           subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
+
+      - name: Wait for image availability
+        run: |
+          sleep 10
+          
       - name: Scan for vulnerabilities
         uses: anchore/sbom-action@v0
         with:
