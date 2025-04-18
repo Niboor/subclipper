@@ -1,7 +1,9 @@
+# Version control
+.git
+.gitignore
+
 # Python
 __pycache__/
-share/
-pyvenv.cfg
 *.py[cod]
 *$py.class
 *.so
@@ -17,7 +19,6 @@ lib64/
 parts/
 sdist/
 var/
-bin/
 wheels/
 *.egg-info/
 .installed.cfg
@@ -48,8 +49,14 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# CSS
-subclipper/app/static/tailwind.css
+# Docker
+Dockerfile
+.dockerignore
+
+# Documentation
+docs/
+*.md
+!README.md
 
 # Misc
 .DS_Store
@@ -58,4 +65,4 @@ subclipper/app/static/tailwind.css
 *.bak
 *.backup
 *.orig
-*.rej
+*.rej 

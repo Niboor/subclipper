@@ -1,0 +1,51 @@
+<div
+    class="w-full h-full flex flex-col"
+>
+    <div
+        id="sublist"
+        class="w-full flex-1 min-h-0 flex flex-col"
+    >
+    <div class="flex-1 overflow-y-auto">
+        {% if subs|length == 0 %}
+            <div class="h-full flex justify-center items-center">
+                No results found
+            </div>
+        {% else %}
+            <ul class="list bg-base-100 rounded-box shadow-md">
+                {% for sub in subs %}
+                    <li
+                        class="list-row hover:bg-base-200 cursor-pointer"
+                        hx-get="/sub_form/{{ sub['video_id'] }}/{{ sub['id'] }}"
+                        hx-replace-url="true"
+                        hx-target="#modal-container"
+                        hx-ext="preserve-params"
+                    >
+                        <div class="flex flex-col items-start">
+                            <div class="text-xs uppercase font-semibold opacity-60">{{ videos[sub.video_id].title }}</div>
+                            <div>{{ sub.text }}</div>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+    <div class="flex-none join flex flex-row justify-safe-center min-h-12 overflow-x-auto">
+        {% for page in pages %}
+            <button
+                class="join-item btn {{ 'btn-active' if request.args.get('page') == loop.index0|string or (request.args.get('page') is none and loop.first) else '' }}"
+                hx-get="/?page={{ loop.index0 }}"
+                hx-target="main"
+                hx-replace-url="true"
+                hx-ext="preserve-params"
+            >
+                {{ loop.index }}
+            </button>
+        {% endfor %}
+    </div>
+    </div>
+</div>
+{% if oob %}
+    {% with videos=videos, oob=oob %}
+        {% include "video_selection_list.html" %}
+    {% endwith %}
+{% endif %}

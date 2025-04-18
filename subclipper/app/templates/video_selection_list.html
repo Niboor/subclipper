@@ -1,5 +1,9 @@
-<details class="w-full dropdown flex flex-row justify-center">
-    <summary class="btn">Include: {{ 'All videos' if request.args.get('video') is none else videos[request.args.get('video')|int].title }}</summary>
+<details
+    id="video_selection_list"
+    class="w-full dropdown flex flex-row justify-center"
+    hx-swap-oob="{{ 'true' if oob else 'false' }}"
+>
+    <summary role="button" class="btn">Include: {{ 'All videos' if request.args.get('video') is none else videos[request.args.get('video')|int].title }}</summary>
     <ul
         class="w-full menu dropdown-content bg-base-200 rounded-box min-h-12 shadow-sm"
     >

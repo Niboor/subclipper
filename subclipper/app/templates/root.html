@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <title>{{ show_name }} Clip generator</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <link rel='stylesheet' type='text/css' media='screen' href='/public/tailwind.css'>
+    <script src="https://unpkg.com/htmx.org@2.0.3"></script>
+    <script src="https://unpkg.com/htmx-ext-response-targets@2.0.0/response-targets.js"></script>
+    <script src="/public/main.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
+</head>
+<body
+    hx-boost="true"
+    hx-ext="response-targets"
+    class="h-screen w-full flex flex-col"
+>
+    <header class="flex-none">
+        <div class="navbar bg-base-100 shadow-sm flex flex-col md:flex-row !p-0">
+            <h1 class="flex-1 text-xl md:text-3xl p-2 text-center md:text-left">
+                {{ show_name }} Clip generator
+            </h1>
+            <div
+                id="search"
+                class="w-full flex flex-1 flex-row justify-center p-2"
+            >
+                <label class="input">
+                    {% include "search_icon.html" %}
+                    <input
+                        id="search"
+                        class="grow"
+                        name="q"
+                        type="search"
+                        placeholder="Search for a subtitle..."
+                        value="{{ request.args.get('q') or '' }}"
+                        hx-get="/"
+                        hx-trigger="search, keyup delay:200ms changed"
+                        hx-target="main"
+                        hx-replace-url="true"
+                        hx-vals="js:{...(() => { const video = new URLSearchParams(window.location.search).get('video'); return video !== null ? { video } : {}; })()}"
+                        style="width: 100%;"
+                    />
+                </label>
+            </div>
+            <div class="flex w-full flex-1">
+            </div>
+        </div>
+        {% with videos=videos %}
+            {% include "video_selection_list.html" %}
+        {% endwith %}
+    </header>
+    <main
+        class="flex-1 min-h-0 md:p-8"
+        hx-get="/"
+        hx-trigger="load"
+        hx-include="[name='q']"
+        hx-vals="js:{...(() => { const video = new URLSearchParams(window.location.search).get('video'); return video !== null ? { video } : {}; })()}"
+    >
+    </main>
+    <div id="modal-container">
+        {% with sub_data=sub_data, url=None, errs=errs %}
+            {% include "tweak_modal.html" %}
+        {% endwith %}
+    </div>
+    <footer class="flex-none footer flex flex-col md:flex-row justify-center items-center gap-2 w-full bg-base-200 text-base-content p-4 text-center md:text-left">
+        All rights to "{{ show_name }}" are reserved by their respective owners. Made using <a class="btn btn-link flex flex-row items-center p-0" href="https://github.com/Niboor/subclipper">Subclipper</a>
+    </footer>
+    <div class="toast toast-start">
+    </div>
+</body>
+</html>

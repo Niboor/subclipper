@@ -169,7 +169,11 @@
 
     {% block scripts %}
         <script>
-            document.addEventListener('DOMContentLoaded', () => {
+            document.addEventListener('htmx:afterSettle', (evt) => {
+
+                // Prevents some errors being thrown in the console
+                if (!document.getElementById('webpRadio')) return;
+
                 const webpRadio  = document.getElementById('webpRadio')
                 const gifRadio   = document.getElementById('gifRadio')
                 const gifColours = document.getElementById('gifColours')
@@ -178,10 +182,13 @@
                     gifColours.disabled = webpRadio.checked
                 }
 
+                // Initial state
                 toggleDisabled()
 
+                // Add change event listeners
                 webpRadio.addEventListener('change', toggleDisabled)
                 gifRadio.addEventListener('change', toggleDisabled)
+
             })
         </script>
     {% endblock %}
