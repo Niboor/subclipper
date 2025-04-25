@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Film strip background -->
+  <rect x="2" y="4" width="28" height="24" fill="#2563eb" rx="2"/>
+  
+  <!-- Film perforations -->
+  <rect x="4" y="6" width="3" height="4" fill="white" rx="1"/>
+  <rect x="4" y="14" width="3" height="4" fill="white" rx="1"/>
+  <rect x="4" y="22" width="3" height="4" fill="white" rx="1"/>
+  
+  <rect x="25" y="6" width="3" height="4" fill="white" rx="1"/>
+  <rect x="25" y="14" width="3" height="4" fill="white" rx="1"/>
+  <rect x="25" y="22" width="3" height="4" fill="white" rx="1"/>
+  
+  <!-- Text bubble -->
+  <path d="M10 12h12v8H16l-4 4v-4h-2v-8z" fill="white"/>
+</svg> 
