@@ -1,6 +1,14 @@
 @import "tailwindcss";
 @plugin "daisyui";
 
+/* For future reference -
+Current active primary color:
+theme('colors.base-100')
+
+Current active secondary color
+theme('colors.base-200')
+*/
+
 body {
     font-family: "Open Sans", serif;
     font-optical-sizing: auto;
@@ -33,4 +41,58 @@ body {
     flex-direction: column;
     justify-content: safe center;
     align-items: safe center;
+}
+
+
+.dual-handle-slider {
+    position: relative;
+    height: 24px;
+    width: 100%;
+    margin: 1rem 0;
+    z-index: 1;
+}
+
+.slider-track {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background-color: #e2e8f0;
+    border-radius: 2px;
+    transform: translateY(-50%);
+    z-index: 1;
+}
+
+.slider-range {
+    position: absolute;
+    top: 50%;
+    height: 4px;
+    background-color: #3b82f6;
+    border-radius: 2px;
+    transform: translateY(-50%);
+    z-index: 2;
+}
+
+.slider-handle {
+    position: absolute;
+    top: 50%;
+    width: 0.9rem;
+    height: 1.8rem;
+    background-color: white;
+    border: 2px solid theme('colors.base-100');
+    border-radius: 1rem;
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+    transition: box-shadow 0.2s;
+    z-index: 3;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.slider-handle:hover {
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+}
+
+.slider-handle:active {
+    box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.3);
 }

@@ -104,7 +104,22 @@ def get_gif_view():
     
     errors = settings.validate()
     if errors:
-        return cached_render_template("settings.html", errs=errors, sub=settings.__dict__), 400
+        # Create a dict with all the current values to preserve them
+        current_values = {
+            'id': request.args.get('sub_id'),
+            'episode': request.args.get('episode'),
+            'start': request.args.get('start', type=float),
+            'end': request.args.get('end', type=float),
+            'text': request.args.get('text', ''),
+            'crop': request.args.get('crop', False, type=bool),
+            'resolution': request.args.get('resolution', 320, type=int),
+            'font_size': request.args.get('font_size', 20, type=int),
+            'caption': request.args.get('caption', ''),
+            'boomerang': request.args.get('boomerang', False, type=bool),
+            'colour': request.args.get('colour', False, type=bool),
+            'format': request.args.get('format', 'webp')
+        }
+        return cached_render_template("settings.html", errs=errors, sub=current_values), 400
         
     return cached_render_template("gif_view.html", url=f"/gif?{request.query_string.decode()}")
 
