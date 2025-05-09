@@ -42,9 +42,14 @@ class DualHandleSlider {
         this.startHandle = this.element.querySelector('.slider-handle-start');
         this.endHandle = this.element.querySelector('.slider-handle-end');
 
-        // Add event listeners
+        // Add event listeners for both mouse and touch events
         this.startHandle.addEventListener('mousedown', this.handleMouseDown.bind(this, 'start'));
         this.endHandle.addEventListener('mousedown', this.handleMouseDown.bind(this, 'end'));
+
+        // Touch events
+        this.startHandle.addEventListener('touchstart', this.handleTouchStart.bind(this, 'start'), { passive: false });
+        this.endHandle.addEventListener('touchstart', this.handleTouchStart.bind(this, 'end'), { passive: false });
+        this.track.addEventListener('touchstart', this.handleTrackTouch.bind(this), { passive: false });
 
         // Set initial positions
         this.updateUI();
@@ -60,6 +65,63 @@ class DualHandleSlider {
     positionToTime(position) {
         const totalRange = this.sliderEnd - this.sliderStart;
         return (position * totalRange) + this.sliderStart;
+    }
+
+    handleTrackTouch(event) {
+        event.preventDefault();
+        const position = this.getTouchPosition(event);
+        const time = this.positionToTime(position);
+
+        // Determine which handle to move based on which is closer
+        const startDistance = Math.abs(time - this.currentStart);
+        const endDistance = Math.abs(time - this.currentEnd);
+
+        if (startDistance < endDistance) {
+            this.currentStart = parseFloat(Math.min(time, this.currentEnd - this.step).toFixed(this.decimals));
+        } else {
+            this.currentEnd = parseFloat(Math.max(time, this.currentStart + this.step).toFixed(this.decimals));
+        }
+
+        this.updateUI();
+    }
+
+    handleTouchStart(handle, event) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const moveHandler = (e) => {
+            e.preventDefault();
+            const position = this.getTouchPosition(e);
+            const time = this.positionToTime(position);
+
+            // Update the appropriate handle
+            if (handle === 'start') {
+                this.currentStart = parseFloat(Math.min(time, this.currentEnd - this.step).toFixed(this.decimals));
+            } else {
+                this.currentEnd = parseFloat(Math.max(time, this.currentStart + this.step).toFixed(this.decimals));
+            }
+
+            this.updateUI();
+        };
+
+        const upHandler = (e) => {
+            e.preventDefault();
+            document.removeEventListener('touchmove', moveHandler, { passive: false });
+            document.removeEventListener('touchend', upHandler);
+            document.removeEventListener('touchcancel', upHandler);
+        };
+
+        document.addEventListener('touchmove', moveHandler, { passive: false });
+        document.addEventListener('touchend', upHandler);
+        document.addEventListener('touchcancel', upHandler);
+    }
+
+    // Get the current touch position as a value between 0 and 1
+    getTouchPosition(event) {
+        const rect = this.track.getBoundingClientRect();
+        const touch = event.touches[0];
+        const x = touch.clientX - rect.left;
+        return Math.max(0, Math.min(1, x / rect.width));
     }
 
     // Get the current mouse position as a value between 0 and 1
