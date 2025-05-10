@@ -54,7 +54,6 @@ run: tailwind
 	SEARCH_PATH=$(SEARCH_PATH) \
 	SHOW_NAME="$(SHOW_NAME)" \
 	$(PYTHON) -m flask run --debug
-# --host=192.168.1.45 --port=5000
 
 # Docker targets
 docker-build:
