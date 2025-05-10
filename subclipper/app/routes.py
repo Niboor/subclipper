@@ -45,7 +45,7 @@ def index():
     video_id = request.args.get("video", None, type=int)
     page = request.args.get("page", 0, type=int)
     page_length = request.args.get("page_length", 50, type=int)
-    
+
     videos = config.video_processor.load_videos()
     subs = config.video_processor.search_subtitles(search, video_id)
     sub_pages = [subs[x:x+page_length] for x in range(0, len(subs), page_length)]
@@ -53,7 +53,7 @@ def index():
 
     hx_request = request.headers.get("HX-Request")
     template = "root.html" if hx_request is None else "subtitles.html"
-    
+
     return cached_render_template(
         template,
         videos=videos,
@@ -71,17 +71,17 @@ def get_sub(video_id, sub_id):
         video = videos[int(video_id)]
     except (IndexError, ValueError):
         return "Video not found", 404
-        
+
     try:
         sub = video.subs[int(sub_id)]
     except (IndexError, ValueError):
         return "Subtitle not found", 404
-        
+
     sub_data = {
         'id': sub_id,
         'episode': video.id,
-        'start': sub.start,
-        'end': sub.end,
+        'start_time': sub.start,
+        'end_time': sub.end,
         'text': sub.text,
         'crop': False,
         'resolution': 320,
@@ -91,7 +91,7 @@ def get_sub(video_id, sub_id):
         'colour': False,
         'boomerang': False,
     }
-    
+
     hx_request = request.headers.get("HX-Request")
     if hx_request is None:
         return cached_render_template("root.html", sub_data=sub_data, videos=videos)
@@ -101,22 +101,22 @@ def get_sub(video_id, sub_id):
 @bp.route("/gif_view")
 def get_gif_view():
     settings = create_clip_settings_from_request()
-    
+
     errors = settings.validate()
     if errors:
         return cached_render_template("settings.html", errs=errors, sub=settings.__dict__), 400
-        
+
     return cached_render_template("gif_view.html", url=f"/gif?{request.query_string.decode()}")
 
 @bp.route("/gif")
 def get_gif():
     settings = create_clip_settings_from_request()
-    
+
     output_path, error = config.video_processor.generate_clip(settings)
     if error:
         logger.warning(f"Failed to generate clip: {error}")
         return error, 500
-        
+
     try:
         response = send_file(output_path, mimetype=f'image/{settings.format}')
         response.headers['Cache-Control'] = 'public, max-age=86400'
