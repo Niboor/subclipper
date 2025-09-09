@@ -1,0 +1,55 @@
+@import "tailwindcss";
+@plugin "daisyui";
+
+/* @plugin "daisyui/theme" {
+    name: "subclipper";
+    default: "true";
+    color-scheme: "dark";
+
+    /* --color-base-100: #EFF2F4;
+    --color-base-200: #ffffff;
+    --color-base-300: oklch(92% 0.04 240);
+    --color-base-content: oklch(20% 0.05 240); */
+    /* --color-primary: #1a1a1a; */
+    /* --color-primary-content: #e6faff; */
+    /* --color-secondary: #4a4a4a; */
+    /* --color-secondary-content: oklch(98% 0.01 200);
+    --color-accent: #38b14a;
+    --color-accent-content: #e1f3e4;
+    --color-neutral: oklch(50% 0.05 240);
+    --color-neutral-content: oklch(98% 0.01 240);
+    --color-info: #0aa8fb;
+    --color-info-content: #b3e2ff;
+    --color-success: #38b14a;
+    --color-success-content: #e1f3e4;
+    --color-warning: #ff7f45;
+    --color-warning-content: #ffece3;
+    --color-error: #be1e2d;
+    --color-error-content: #f5dde0;
+
+    /* border radius */
+    /* --radius-selector: 1rem;
+    --radius-field: 0.25rem;
+    --radius-box: 0.5rem; */
+
+    /* base sizes */
+    /* --size-selector: 0.25rem;
+    --size-field: 0.25rem; */
+
+    /* border size */
+    /* --border: 1px; */
+
+    /* effects */
+    /* --depth: 1;
+    --noise: 0; */
+
+    /* --glass-blur: 40px; */
+/*}
+
+@plugin "daisyui" {
+    themes: subclipper;
+}
+
+* {
+    box-sizing: border-box;
+} */

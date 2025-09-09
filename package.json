@@ -1,7 +1,24 @@
 {
+  "name": "subclipper",
+  "private": true,
+  "version": "0.0.0",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
   "devDependencies": {
-    "@tailwindcss/cli": "^4.1.4",
-    "daisyui": "^5.0.23",
-    "tailwindcss": "^4.1.4"
+    "typescript": "~5.8.3",
+    "vite": "^7.1.2"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.1.13",
+    "@types/node": "^24.3.1",
+    "daisyui": "^5.1.7",
+    "htmx-ext-response-targets": "^2.0.3",
+    "htmx.org": "^2.0.6",
+    "lit": "^3.3.1"
   }
 }

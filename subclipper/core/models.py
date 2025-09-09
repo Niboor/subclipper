@@ -21,6 +21,8 @@ class Subtitle:
 class ClipSettings:
     start_time: float
     end_time: float
+    original_start_time: float
+    original_end_time: float
     text: str
     crop: bool
     resolution: int

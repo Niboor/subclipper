@@ -22,6 +22,8 @@ def create_clip_settings_from_request() -> ClipSettings:
     return ClipSettings(
         start_time=request.args.get('start', 0, type=float),
         end_time=request.args.get('end', 0, type=float),
+        original_start_time=request.args.get('original_start', 0, type=float),
+        original_end_time=request.args.get('original_end', 0, type=float),
         text=request.args.get('text', '', type=str),
         crop=request.args.get('crop', False, type=bool),
         resolution=request.args.get('resolution', 500, type=int),

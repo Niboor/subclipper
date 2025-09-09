@@ -35,19 +35,26 @@ install: venv
 	$(PIP) install -e ".[dev]"
 	@echo "Dependencies installed."
 
-# Tailwind CSS targets
-tailwind:
-	@echo "Installing Tailwind CSS dependencies..."
+# Setup yarn frontend dependencies
+yarn:
+	@echo "Installing dependencies with yarn..."
 	yarn
-	@echo "Compiling Tailwind CSS..."
-	npx tailwindcss -i ./subclipper/app/static/main.css -o ./subclipper/app/static/tailwind.css
+	@echo "Bundling TypeScript..."
+	yarn build
+
+# Tailwind CSS targets
+# tailwind:
+# 	@echo "Installing Tailwind CSS dependencies..."
+# 	yarn
+# 	@echo "Compiling Tailwind CSS..."
+# 	npx tailwindcss -i ./subclipper/app/static/main.css -o ./subclipper/app/static/tailwind.css
 
 # Development targets
 test:
 	@echo "Running tests..."
 	$(PYTHON) -m pytest subclipper/tests/ -v
 
-run: tailwind
+run: yarn
 	@echo "Starting development server..."
 	FLASK_APP=subclipper.app \
 	FLASK_ENV=development \
