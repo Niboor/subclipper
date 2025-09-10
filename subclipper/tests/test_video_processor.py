@@ -81,6 +81,8 @@ def test_generate_clip(video_processor, system_font_path, sample_video_path):
     settings = ClipSettings(
         start_time=0.0,
         end_time=5.0,
+        original_start_time=0.0,
+        original_end_time=5.0,
         text="Test",
         crop=False,
         resolution=500,
@@ -118,6 +120,8 @@ def test_generate_clip_error_handling(video_processor, system_font_path, sample_
     settings = ClipSettings(
         start_time=0.0,
         end_time=5.0,
+        original_start_time=0.0,
+        original_end_time=5.0,
         text="Test",
         crop=False,
         resolution=500,
