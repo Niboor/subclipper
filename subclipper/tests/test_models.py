@@ -52,6 +52,8 @@ def test_clip_settings_validation_errors():
     settings = ClipSettings(
         start_time=5.0,
         end_time=0.0,
+        original_start_time=5.0,
+        original_end_time=0.0,
         text="Test",
         crop=False,
         resolution=500,
