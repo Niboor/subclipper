@@ -1,7 +1,9 @@
-from flask import Blueprint, render_template, request, send_file, send_from_directory, make_response, jsonify, current_app
+from flask import Blueprint, redirect, render_template, request, send_file, send_from_directory, make_response, jsonify, current_app
 from pathlib import Path
 import logging
 from typing import Optional
+
+import flask
 
 from ..core.models import ClipSettings
 from ..utils.config import Config
@@ -47,6 +49,7 @@ def index():
     video_id = request.args.get("video", None, type=int)
     page = request.args.get("page", 0, type=int)
     page_length = request.args.get("page_length", 50, type=int)
+    highlight = request.args.get("highlight", None, type=str)
 
     videos = config.video_processor.load_videos()
     subs = config.video_processor.search_subtitles(search, video_id)
@@ -60,11 +63,32 @@ def index():
         template,
         videos=videos,
         subs=subs_from_page,
+        page_length=page_length,
         pages=sub_pages,
         sub_data=None,
         url=None,
         oob=hx_request is not None
     )
+
+@bp.route("/locate/<video_id>/<sub_id>")
+def locate(video_id: str, sub_id: str):
+    video_id = int(video_id)
+    sub_id = int(sub_id)
+    page_length = request.args.get("page_length", 50, type=int)
+    subs = config.video_processor.search_subtitles(None, None)
+    sub_pages = [subs[x:x+page_length] for x in range(0, len(subs), page_length)]
+    sub_page = [i for i, page in enumerate(sub_pages) if len([sub for sub in page if sub.id == sub_id and sub.video_id == video_id]) > 0] if sub_pages else []
+
+    if len(sub_page) == 0:
+        return f"no subtitle with id {sub_id} from video with id {video_id} found", 404
+    
+    resp = flask.Response("OK")
+    resp.headers['HX-Redirect'] = f"/?page={sub_page[0]}&page_length={page_length}#{video_id}-{sub_id}"
+    resp.status_code = 200
+
+    return resp
+    
+
 
 @bp.route("/sub_form/<video_id>/<sub_id>")
 def get_sub(video_id, sub_id):

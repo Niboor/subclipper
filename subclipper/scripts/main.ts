@@ -17,6 +17,11 @@ async function main() {
   htmx.defineExtension(`preserve-params`, {
     onEvent: (name, event) => {
         if(name === `htmx:configRequest`) {
+            const preserveParams = event.detail.elt.getAttribute(`preserve-params`)
+            if(preserveParams === "false") {
+              return true
+            }
+            console.log("continue preserve")
             const path = event.detail.path.split("?")[0];
             const params = event.detail.path.split("?")[1] || "";
             const currentSearchParams = new URLSearchParams(window.location.search)
