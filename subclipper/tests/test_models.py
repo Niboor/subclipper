@@ -37,7 +37,8 @@ def test_clip_settings_validation():
         text="Test",
         crop=False,
         resolution=500,
-        episode_id=0,
+        id=0,
+        episode=0,
         font_size=20,
         caption="",
         boomerang=False,
@@ -57,7 +58,8 @@ def test_clip_settings_validation_errors():
         text="Test",
         crop=False,
         resolution=500,
-        episode_id=0,
+        id=0,
+        episode=0,
         font_size=20,
         caption="",
         boomerang=False,
@@ -78,11 +80,11 @@ def test_clip_settings_validation_errors():
 
     # Test invalid episode ID
     settings.resolution = 500
-    settings.episode_id = -1
+    settings.episode = -1
     assert "episode" in settings.validate()
 
     # Test text too long
-    settings.episode_id = 0
+    settings.episode = 0
     settings.text = "a" * 201
     assert "text" in settings.validate()
 

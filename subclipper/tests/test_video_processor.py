@@ -86,7 +86,8 @@ def test_generate_clip(video_processor, system_font_path, sample_video_path):
         text="Test",
         crop=False,
         resolution=500,
-        episode_id=0,
+        id=0,
+        episode=0,
         font_size=20,
         caption="",
         boomerang=False,
@@ -102,7 +103,7 @@ def test_generate_clip(video_processor, system_font_path, sample_video_path):
         assert output_path is not None
         
     # Test with invalid settings
-    settings.episode_id = 999
+    settings.episode = 999
     output_path, error = video_processor.generate_clip(settings)
     assert error is not None
     assert output_path is None
@@ -125,7 +126,8 @@ def test_generate_clip_error_handling(video_processor, system_font_path, sample_
         text="Test",
         crop=False,
         resolution=500,
-        episode_id=0,
+        id=0,
+        episode=0,
         font_size=20,
         caption="",
         boomerang=False,

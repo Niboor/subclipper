@@ -38,8 +38,12 @@ export class DualHandleSlider extends LitElement {
   @state()
   private sliderEnd: number = 0
 
+  @state()
+  private parentForm?: HTMLFormElement
+  @state()
+  private parentFormEventHandler?: (event: FormDataEvent) => void
+
   firstUpdated() {
-    console.log(this.start, this.end, this.originalStart, this.originalEnd)
     this.originalStart = this.originalStart ? this.originalStart : this.start
     this.originalEnd = this.originalEnd ? this.originalEnd : this.end
     this.currentStart = this.start;
@@ -128,9 +132,16 @@ export class DualHandleSlider extends LitElement {
       const forms = Array.from(root.querySelectorAll(`form`))
       const form = forms.find(form => form.contains(this))
       if(form !== undefined) {
-          form.addEventListener(`formdata`, this.handleFormData.bind(this))
+          this.parentForm = form
+          this.parentFormEventHandler = this.handleFormData.bind(this)
+          form.addEventListener(`formdata`, this.parentFormEventHandler!)
       }
 
+  }
+
+  disconnectedCallback(): void {
+    super.disconnectedCallback()
+    this.parentForm?.removeEventListener(`formdata`, this.parentFormEventHandler!)
   }
 
   render() {
@@ -161,14 +172,14 @@ export class DualHandleSlider extends LitElement {
           ></div>
   
           <div
-            class="slider-handle absolute top-1/2 -translate-y-1/3 -translate-x-1/2 w-4 h-4 bg-base-200 rounded-full shadow cursor-pointer"
+            class="slider-handle absolute top-1/2 -translate-y-1.5 -translate-x-1/2 w-4 h-4 bg-base-200 rounded-full shadow cursor-pointer"
             style="left:${startPos}%;"
             @mousedown=${(e: MouseEvent) => this.startDrag("start", e)}
             @touchstart=${(e: TouchEvent) => this.startDrag("start", e)}
           ></div>
   
           <div
-            class="slider-handle absolute top-1/2 -translate-y-1/3 -translate-x-1/2 w-4 h-4 bg-base-200 rounded-full shadow cursor-pointer"
+            class="slider-handle absolute top-1/2 -translate-y-1.5 -translate-x-1/2 w-4 h-4 bg-base-200 rounded-full shadow cursor-pointer"
             style="left:${endPos}%;"
             @mousedown=${(e: MouseEvent) => this.startDrag("end", e)}
             @touchstart=${(e: TouchEvent) => this.startDrag("end", e)}

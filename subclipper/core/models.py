@@ -26,7 +26,8 @@ class ClipSettings:
     text: str
     crop: bool
     resolution: int
-    episode_id: int
+    id: int
+    episode: int
     font_size: int
     caption: str
     boomerang: bool
@@ -44,7 +45,7 @@ class ClipSettings:
             errs['end'] = 'clip too long'
         if self.resolution < 50 or self.resolution > 1024:
             errs['resolution'] = 'resolution must be between 50 and 1024'
-        if self.episode_id < 0:
+        if self.episode < 0:
             errs['episode'] = 'invalid episode id'
         if len(self.text) > 200:
             errs['text'] = 'subtitle text too large'

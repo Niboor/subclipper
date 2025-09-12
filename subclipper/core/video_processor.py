@@ -91,7 +91,7 @@ class VideoProcessor:
                     return None, str(errors)
 
                 try:
-                    video = self._videos[settings.episode_id]
+                    video = self._videos[settings.episode]
                 except IndexError:
                     return None, "Invalid episode ID"
 
