@@ -39,7 +39,6 @@ export class DualHandleSlider extends LitElement {
   private sliderEnd: number = 0
 
   firstUpdated() {
-    console.log(this.start, this.end, this.originalStart, this.originalEnd)
     this.originalStart = this.originalStart ? this.originalStart : this.start
     this.originalEnd = this.originalEnd ? this.originalEnd : this.end
     this.currentStart = this.start;

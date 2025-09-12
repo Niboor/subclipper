@@ -48,7 +48,7 @@ def index():
     search = request.args.get("q")
     video_id = request.args.get("video", None, type=int)
     page = request.args.get("page", 0, type=int)
-    page_length = request.args.get("page_length", 50, type=int)
+    page_length = request.args.get("page_length", config.default_page_length, type=int)
     highlight = request.args.get("highlight", None, type=str)
 
     videos = config.video_processor.load_videos()
@@ -74,7 +74,7 @@ def index():
 def locate(video_id: str, sub_id: str):
     video_id = int(video_id)
     sub_id = int(sub_id)
-    page_length = request.args.get("page_length", 50, type=int)
+    page_length = request.args.get("page_length", config.default_page_length, type=int)
     subs = config.video_processor.search_subtitles(None, None)
     sub_pages = [subs[x:x+page_length] for x in range(0, len(subs), page_length)]
     sub_page = [i for i, page in enumerate(sub_pages) if len([sub for sub in page if sub.id == sub_id and sub.video_id == video_id]) > 0] if sub_pages else []
