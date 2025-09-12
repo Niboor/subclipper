@@ -14,7 +14,7 @@ export class DualHandleSlider extends LitElement {
   @property({ type: Number })
   public end: number = 10;
   @property({ type: Number })
-  public padding: number = 5;
+  public padding: number = 10;
   @property({ type: Number })
   public step: number = 0.1;
   @property({ type: Number })
@@ -48,8 +48,9 @@ export class DualHandleSlider extends LitElement {
     this.originalEnd = this.originalEnd ? this.originalEnd : this.end
     this.currentStart = this.start;
     this.currentEnd = this.end;
-    this.sliderStart = this.originalStart - this.padding;
-    this.sliderEnd = this.originalEnd + this.padding;
+    const totalClipLength = this.originalEnd - this.originalStart
+    this.sliderStart = Math.max(0, this.originalStart - ((this.padding - totalClipLength) / 2));
+    this.sliderEnd = this.originalEnd + ((this.padding - totalClipLength) / 2);
     this.requestUpdate()
   }
 
