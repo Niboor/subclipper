@@ -14,7 +14,7 @@ export class DualHandleSlider extends LitElement {
   @property({ type: Number })
   public end: number = 10;
   @property({ type: Number })
-  public padding: number = 5;
+  public padding: number = 10;
   @property({ type: Number })
   public step: number = 0.1;
   @property({ type: Number })
@@ -38,13 +38,19 @@ export class DualHandleSlider extends LitElement {
   @state()
   private sliderEnd: number = 0
 
+  @state()
+  private parentForm?: HTMLFormElement
+  @state()
+  private parentFormEventHandler?: (event: FormDataEvent) => void
+
   firstUpdated() {
     this.originalStart = this.originalStart ? this.originalStart : this.start
     this.originalEnd = this.originalEnd ? this.originalEnd : this.end
     this.currentStart = this.start;
     this.currentEnd = this.end;
-    this.sliderStart = this.originalStart - this.padding;
-    this.sliderEnd = this.originalEnd + this.padding;
+    const totalClipLength = this.originalEnd - this.originalStart
+    this.sliderStart = Math.max(0, this.originalStart - ((this.padding - totalClipLength) / 2));
+    this.sliderEnd = this.originalEnd + ((this.padding - totalClipLength) / 2);
     this.requestUpdate()
   }
 
@@ -127,9 +133,16 @@ export class DualHandleSlider extends LitElement {
       const forms = Array.from(root.querySelectorAll(`form`))
       const form = forms.find(form => form.contains(this))
       if(form !== undefined) {
-          form.addEventListener(`formdata`, this.handleFormData.bind(this))
+          this.parentForm = form
+          this.parentFormEventHandler = this.handleFormData.bind(this)
+          form.addEventListener(`formdata`, this.parentFormEventHandler!)
       }
 
+  }
+
+  disconnectedCallback(): void {
+    super.disconnectedCallback()
+    this.parentForm?.removeEventListener(`formdata`, this.parentFormEventHandler!)
   }
 
   render() {
@@ -138,16 +151,7 @@ export class DualHandleSlider extends LitElement {
 
 
     return html`
-      <div class="flex flex-row gap-2 items-center">
-        <button
-            type="button"
-            class="btn btn-sm btn-ghost btn-circle"
-            @click=${() => this.reset()}
-        >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
-            </svg>
-        </button>
+      <div class="flex flex-row gap-2 px-4 items-center h-6">
         <div class="relative w-full h-2 rounded">
           <div
             ${ref(this.sliderTrackRef)}
@@ -160,14 +164,13 @@ export class DualHandleSlider extends LitElement {
           ></div>
   
           <div
-            class="slider-handle absolute top-1/2 -translate-y-1/3 -translate-x-1/2 w-4 h-4 bg-base-200 rounded-full shadow cursor-pointer"
+            class="slider-handle absolute top-1/2 -translate-y-1.5 -translate-x-1/2 w-4 h-4 bg-base-200 rounded-full shadow cursor-pointer"
             style="left:${startPos}%;"
             @mousedown=${(e: MouseEvent) => this.startDrag("start", e)}
             @touchstart=${(e: TouchEvent) => this.startDrag("start", e)}
           ></div>
-  
           <div
-            class="slider-handle absolute top-1/2 -translate-y-1/3 -translate-x-1/2 w-4 h-4 bg-base-200 rounded-full shadow cursor-pointer"
+            class="slider-handle absolute top-1/2 -translate-y-1.5 -translate-x-1/2 w-4 h-4 bg-base-200 rounded-full shadow cursor-pointer"
             style="left:${endPos}%;"
             @mousedown=${(e: MouseEvent) => this.startDrag("end", e)}
             @touchstart=${(e: TouchEvent) => this.startDrag("end", e)}
@@ -175,7 +178,7 @@ export class DualHandleSlider extends LitElement {
         </div>
       </div>
 
-      <div class="flex flex-row justify-between mt-4">
+      <div class="flex flex-row justify-between h-full">
         <fieldset class="flex flex-col gap-1">
           <legend class="fieldset-legend">Start time</legend>
           <label class="input w-30 validator ${this.startError ? `input-error` : ``}">
@@ -196,6 +199,19 @@ export class DualHandleSlider extends LitElement {
             this.startError ? html`<div class="text-error">${this.startError}</div>` : html``
           }
         </fieldset>
+        <div
+          class="h-full border-white flex flex-col justify-center items-center"
+        >
+          <button
+              type="button"
+              class="btn btn-sm btn-ghost btn-circle"
+              @click=${() => this.reset()}
+          >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+              </svg>
+          </button>
+        </div>
         <fieldset class="flex flex-col gap-1">
           <legend class="fieldset-legend">End time</legend>
           <label class="input w-30 validator ${this.endError ? `input-error` : ``}">

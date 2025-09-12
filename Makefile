@@ -42,13 +42,6 @@ yarn:
 	@echo "Bundling TypeScript..."
 	yarn build
 
-# Tailwind CSS targets
-# tailwind:
-# 	@echo "Installing Tailwind CSS dependencies..."
-# 	yarn
-# 	@echo "Compiling Tailwind CSS..."
-# 	npx tailwindcss -i ./subclipper/app/static/main.css -o ./subclipper/app/static/tailwind.css
-
 # Development targets
 test:
 	@echo "Running tests..."
