@@ -10,18 +10,42 @@ async function main() {
   
   await import("htmx-ext-response-targets")
   
-  htmx.process(document.body)
-  
   // Custom HTMX extensions can be defined here
   // Ensure the existing query parameters in the current URL are preserved, only changing those that are requested to be changed
   htmx.defineExtension(`preserve-params`, {
     onEvent: (name, event) => {
         if(name === `htmx:configRequest`) {
-            const path = event.detail.path.split("?")[0];
-            const params = event.detail.path.split("?")[1] || "";
+
+            //preserve-params can be false, true, or a specific space-separated list of params that should be preserved
+            const preserveParams: string | null = event.detail.elt.getAttribute(`preserve-params`)
+            if(preserveParams === `false`) {
+              return true
+            }
+
+            const onlyPreserveTheseParams = (
+              preserveParams === null || preserveParams === `true` || preserveParams === `*` || preserveParams === ``
+                ? undefined
+                : preserveParams.split(` `)
+            )
+
+            // Path that a request is sent to
+            const path = event.detail.path.split("?")[0]
+            // Query parameters sent to that path
+            const params = event.detail.path.split("?")[1] || ""
+            const nextSearchParams = new URLSearchParams(params)
+            // The query parameters currently in the browser's URL, filtering out the params that should not be preserved
             const currentSearchParams = new URLSearchParams(window.location.search)
-            const nextSearchParams = new URLSearchParams(params);
+            if(onlyPreserveTheseParams !== undefined) {
+              currentSearchParams.forEach((_, key) => {
+                if(!onlyPreserveTheseParams.includes(key)) {
+                  currentSearchParams.delete(key)
+                }
+              })
+            }
+
+            // The names of the query parameters, made unique
             const keys = new Set([...currentSearchParams.keys(), ...nextSearchParams.keys()])
+            // All the keys that should be taken from `nextSearchParams` and not from `currentSearchParams`
             const excludeKeys = new Set(new URLSearchParams(event.detail.formData).keys())
             const newSearchParams = new URLSearchParams()
             keys.forEach(key => {
@@ -52,6 +76,9 @@ async function main() {
         return true
     }
   })
+
+
+  htmx.process(document.body)
 }
 main()
 

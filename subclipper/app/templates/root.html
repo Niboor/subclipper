@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html class="scroll-smooth">
 <head>
     <meta charset='utf-8'>
     <meta http-equiv='X-UA-Compatible' content='IE=edge'>
@@ -40,7 +40,8 @@
                         hx-trigger="search, keyup delay:200ms changed"
                         hx-target="main"
                         hx-replace-url="true"
-                        hx-vals="js:{...(() => { const video = new URLSearchParams(window.location.search).get('video'); return video !== null ? { video } : {}; })()}"
+                        hx-ext="preserve-params"
+                        preserve-params="video"
                         style="width: 100%;"
                     />
                 </label>
@@ -54,10 +55,10 @@
     </header>
     <main
         class="flex-1 min-h-0 md:p-8"
+        hx-ext="preserve-params"
         hx-get="/"
         hx-trigger="load"
         hx-include="[name='q']"
-        hx-vals="js:{...(() => { const video = new URLSearchParams(window.location.search).get('video'); return video !== null ? { video } : {}; })()}"
     >
     </main>
     <div id="modal-container">
