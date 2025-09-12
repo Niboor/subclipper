@@ -15,7 +15,7 @@ class Config:
         self._video_processor = None
         
     def _get_required_env(self, name: str) -> str:
-        """Get a required environment variable and convert it to a Path."""
+        """Get a required environment variable. If it is not present, the program will panic."""
         value = os.getenv(name)
         if value is None:
             logger.error(f"{name} has not been configured. Set the {name} env var")
@@ -23,7 +23,7 @@ class Config:
         return value
 
     def _get_optional_env(self, name: str, default: str) -> str:
-        """Get an optional environment variable and convert it to a Path. If it is not present, use the default value instead."""
+        """Get an optional environment variable. If it is not present, use the default value instead."""
         value = os.getenv(name)
         if value is None:
             return default
