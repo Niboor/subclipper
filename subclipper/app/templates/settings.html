@@ -29,68 +29,21 @@
             <fieldset class="w-full">
                 <legend class="fieldset-legend flex items-center gap-2">
                     Clip Timing
-                    <button
-                        type="button"
-                        class="btn btn-sm btn-ghost btn-circle"
-                        onclick="resetSlider(this.closest('fieldset'))"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
-                        </svg>
-                    </button>
                 </legend>
-                <div class="dual-handle-slider"
-                    data-step="0.01"
-                    data-padding="5"
-                    data-start-value="{{ sub.start_time }}"
-                    data-end-value="{{ sub.end_time }}"
-                ></div>
-                <div class="flex flex-row justify-between">
-                    <div class="flex flex-col gap-1">
-                        <label class="text-sm font-medium">Start time</label>
-                        <div class="flex items-center gap-2">
-                            <input
-                                id="startInput"
-                                type="number"
-                                step="any"
-                                class="input input-sm w-30"
-                                onchange="updateSliderFromInput(this, 'start')"
-                                value="{{ sub.start_time }}"
-                            />
-                            <span class="text-sm">s</span>
-                        </div>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <label class="text-sm font-medium">End time</label>
-                        <div class="flex items-center gap-2">
-                            <input
-                                id="endInput"
-                                type="number"
-                                step="any"
-                                class="input input-sm w-30"
-                                onchange="updateSliderFromInput(this, 'end')"
-                                value="{{ sub.end_time }}"
-                            />
-                            <span class="text-sm">s</span>
-                        </div>
-                    </div>
-                </div>
-                <input
-                    type="hidden"
-                    name="start"
-                    value="{{ sub.start_time }}"
+                <dual-handle-slider
+                    step="0.01"
+                    padding="10"
+                    start="{{ sub.start_time }}"
+                    end="{{ sub.end_time }}"
+                    originalStart="{{ sub.original_start_time }}"
+                    originalEnd="{{ sub.original_end_time }}"
+                    {% if errs is not none and 'start' in errs %}
+                    startError="{{ errs['start'] }}"
+                    {% endif %}
+                    {% if errs is not none and 'end' in errs %}
+                    endError="{{ errs['end'] }}"
+                    {% endif %}
                 />
-                <input
-                    type="hidden"
-                    name="end"
-                    value="{{ sub.end_time }}"
-                />
-                {% if errs is not none and 'start' in errs %}
-                <div class="validator-hint text-error">{{ errs['start'] }}</div>
-                {% endif %}
-                {% if errs is not none and 'end' in errs %}
-                    <div class="validator-hint text-error">{{ errs['end'] }}</div>
-                {% endif %}
             </fieldset>
         </div>
         <div class="flex flex-row justify-between gap-4">
@@ -167,7 +120,7 @@
                     class="peer hidden"
                     checked
                 />
-                <div class="w-full rounded-lg border-2 border-base-300 px-4 py-2 text-center text-sm font-bold transition peer-checked:bg-blue-800 peer-checked:border-base-100 peer-checked:text-primary-content">
+                <div class="w-full btn not-peer-checked:btn-outline peer-checked:btn-primary not-peer-checked:hover:bg-base-200 not-peer-checked:hover:border-inherit">
                     WEBP
                 </div>
             </label>
@@ -180,7 +133,7 @@
                     value="gif"
                     class="peer hidden"
                 />
-                <div class="w-full rounded-lg border-2 border-base-300 px-4 py-2 text-center text-sm font-bold transition peer-checked:bg-blue-800 peer-checked:border-base-100 peer-checked:text-primary-content">
+                <div class="w-full btn not-peer-checked:btn-outline peer-checked:btn-primary not-peer-checked:hover:bg-base-200 not-peer-checked:hover:border-inherit">
                     GIF
                 </div>
             </label>

@@ -1,11 +1,12 @@
-FROM node:22 AS tailwind
-WORKDIR /tailwind
+FROM node:22 AS yarn
+WORKDIR /yarn
 
-COPY package.json yarn.lock ./
+COPY package.json yarn.lock tsconfig.json vite.config.ts ./
 COPY subclipper/app/static ./subclipper/app/static
+COPY subclipper/scripts ./subclipper/scripts
 COPY subclipper/app/templates ./subclipper/app/templates
 RUN yarn --frozen-lockfile
-RUN npx @tailwindcss/cli -i subclipper/app/static/main.css -o subclipper/app/static/tailwind.css
+RUN yarn build
 
 FROM debian:12.8-slim
 
@@ -24,7 +25,7 @@ RUN wget https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-${FFM
 
 WORKDIR /app
 COPY . .
-COPY --from=tailwind /tailwind/subclipper/app/static/tailwind.css ./subclipper/app/static/tailwind.css
+COPY --from=yarn /yarn/subclipper/app/static/dist ./subclipper/app/static/dist
 RUN pip install --break-system-packages gunicorn && pip install --break-system-packages -e .
 
 EXPOSE 8000

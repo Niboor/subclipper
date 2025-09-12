@@ -1,7 +1,9 @@
-from flask import Blueprint, render_template, request, send_file, send_from_directory, make_response, jsonify, current_app
+from flask import Response, Blueprint, render_template, request, send_file, send_from_directory, make_response, jsonify, current_app
 from pathlib import Path
 import logging
 from typing import Optional
+
+import flask
 
 from ..core.models import ClipSettings
 from ..utils.config import Config
@@ -22,10 +24,13 @@ def create_clip_settings_from_request() -> ClipSettings:
     return ClipSettings(
         start_time=request.args.get('start', 0, type=float),
         end_time=request.args.get('end', 0, type=float),
+        original_start_time=request.args.get('original_start', 0, type=float),
+        original_end_time=request.args.get('original_end', 0, type=float),
         text=request.args.get('text', '', type=str),
         crop=request.args.get('crop', False, type=bool),
         resolution=request.args.get('resolution', 500, type=int),
-        episode_id=request.args.get('episode', -1, type=int),
+        id=request.args.get('sub_id', -1, type=int),
+        episode=request.args.get('episode', -1, type=int),
         font_size=request.args.get('font_size', 20, type=int),
         caption=request.args.get('caption', '', type=str),
         boomerang=request.args.get('boomerang', False, type=bool),
@@ -104,7 +109,9 @@ def get_gif_view():
 
     errors = settings.validate()
     if errors:
-        return cached_render_template("settings.html", errs=errors, sub=settings.__dict__), 400
+        resp = cached_render_template("settings.html", errs=errors, sub=settings.__dict__)
+        resp.headers['HX-Reswap'] = 'outerHTML'
+        return resp, 400
 
     return cached_render_template("gif_view.html", url=f"/gif?{request.query_string.decode()}")
 
