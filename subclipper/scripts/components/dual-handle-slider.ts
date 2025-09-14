@@ -164,17 +164,25 @@ export class DualHandleSlider extends LitElement {
           ></div>
   
           <div
-            class="slider-handle absolute top-1/2 -translate-y-1.5 -translate-x-1/2 w-4 h-4 bg-base-200 rounded-full shadow cursor-pointer"
+            class="slider-handle absolute top-1/2 -translate-y-3.5 -translate-x-1/2 cursor-pointer w-8 h-8 flex justify-center items-center"
             style="left:${startPos}%;"
             @mousedown=${(e: MouseEvent) => this.startDrag("start", e)}
             @touchstart=${(e: TouchEvent) => this.startDrag("start", e)}
-          ></div>
+          >
+            <div
+              class="w-4 h-4 bg-base-200 rounded-full shadow"
+            ></div>
+          </div>
           <div
-            class="slider-handle absolute top-1/2 -translate-y-1.5 -translate-x-1/2 w-4 h-4 bg-base-200 rounded-full shadow cursor-pointer"
+            class="slider-handle absolute top-1/2 -translate-y-3.5 -translate-x-1/2 cursor-pointer w-8 h-8 flex justify-center items-center"
             style="left:${endPos}%;"
             @mousedown=${(e: MouseEvent) => this.startDrag("end", e)}
             @touchstart=${(e: TouchEvent) => this.startDrag("end", e)}
-          ></div>
+          >
+          <div
+              class="w-4 h-4 bg-base-200 rounded-full shadow"
+            ></div>
+          </div>
         </div>
       </div>
 
