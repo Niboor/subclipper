@@ -1,4 +1,5 @@
 export * from "./components/dual-handle-slider";
+import { SwapOptions } from "htmx.org";
 import "./main.css"
 
 let htmx: typeof import("htmx.org").default;
@@ -62,21 +63,14 @@ async function main() {
     },
   })
 
-  htmx.defineExtension(`copy-to-clipboard`, {
-    onEvent: (name, event) => {
-        if(name === `htmx:beforeSwap`) {
-            const response = event.detail.xhr.response
-            const blob = new Blob([response], { type: `image/gif` })
-            navigator.clipboard.write([
-                new ClipboardItem({
-                    [blob.type]: blob
-                })
-            ])
-        }
-        return true
+  // HTMX uses history.pushState, which does not update CSS :target pseudoclass: https://developer.mozilla.org/en-US/docs/Web/CSS/:target#description
+  // Fix taken and modified from https://github.com/bigskysoftware/htmx/issues/3447
+  htmx.on(`htmx:afterSwap`, (event: Event & { detail: SwapOptions["eventInfo"] }) => {
+    const hashFragment = event.detail.pathInfo.requestPath.split(`#`).at(1)
+    if(hashFragment !== undefined && hashFragment !== ``) {
+      window.location.hash = hashFragment;
     }
   })
-
 
   htmx.process(document.body)
 }

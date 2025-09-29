@@ -1,3 +1,4 @@
+import json
 from flask import Response, Blueprint, render_template, request, send_file, send_from_directory, make_response, jsonify, current_app
 from pathlib import Path
 import logging
@@ -84,7 +85,8 @@ def locate(video_id: str, sub_id: str):
         return f"no subtitle with id {sub_id} from video with id {video_id} found", 404
     
     resp = flask.Response("OK")
-    resp.headers['HX-Redirect'] = f"/?page={sub_page[0]}&page_length={page_length}#{video_id}-{sub_id}"
+    fragment_path = f"/?page={sub_page[0]}&page_length={page_length}#e{video_id}-s{sub_id}"
+    resp.headers['HX-Location'] = json.dumps({"path": fragment_path, "target": "main"})
     resp.status_code = 200
 
     return resp
