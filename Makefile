@@ -49,7 +49,7 @@ test:
 
 run: yarn
 	@echo "Starting development server..."
-	FLASK_APP=subclipper.app \
+	FLASK_APP=src.app \
 	FLASK_ENV=development \
 	SEARCH_PATH=$(SEARCH_PATH) \
 	SHOW_NAME="$(SHOW_NAME)" \

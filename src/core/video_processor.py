@@ -6,7 +6,7 @@ import os
 import time
 from contextlib import contextmanager
 
-from .models import Video, Subtitle, ClipSettings
+from .models import Tree, Video, Subtitle, ClipSettings
 from subs.subs import (extract_subs, generate_video)
 
 logger = logging.getLogger(__name__)
@@ -24,45 +24,43 @@ class VideoProcessor:
     def __init__(self, search_path: Path, font_path: Path):
         self.search_path = search_path
         self.font_path = font_path
-        self._videos: List[Video] = []
         logger.info(f"Initialized VideoProcessor with search_path: {search_path}, font_path: {font_path}")
 
-    def load_videos(self) -> List[Video]:
-        """Load all videos and their subtitles from the search path."""
-        try:
-            if self._videos:
-                logger.debug("Videos already loaded, returning cached list")
-                return self._videos
+    def get_tree(self, search_subpath: str) -> Tree[str]:
+        subpath = self.search_path.joinpath(search_subpath)
+        def convert_tree_rec(file: Path) -> Tree[str]:
+            return Tree(
+                value=file.relative_to(self.search_path).__str__(),
+                children=[] if file.is_file() else [convert_tree_rec(child) for child in file.iterdir()]
+            )
+        return convert_tree_rec(subpath)
 
-            logger.info(f"Loading videos from {self.search_path}")
-            with log_time("video_loading"):
-                videos = []
-                for idx, video_file in enumerate(sorted(self.search_path.glob('*'))):
-                    if not video_file.is_file():
-                        continue
+    def search_subtitles(self, search_subpath: str, search_string: str) -> List[Subtitle]:
+        subpath = self.search_path.joinpath(search_subpath)
+        def extract_subs_rec(file: Path) -> List[Subtitle]:
+            if file.is_file():
+                try:
+                    subs = self._extract_subtitles(file)
+                    return [sub for sub in subs if search_string in sub.text]
+                except Exception as e:
+                    logger.error(f"Failed to process subtitles of video {file.as_uri()}: {e}")
+                    return []
+            else:
+                return [sub for subs in [extract_subs_rec(f) for f in file.iterdir()] for sub in subs]
+        return extract_subs_rec(subpath)
 
-                    try:
-                        subs = self._extract_subtitles(video_file, idx)
-                        video = Video(
-                            id=idx,
-                            title=video_file.stem,
-                            path=video_file,
-                            subs=subs
-                        )
-                        videos.append(video)
-                    except Exception as e:
-                        logger.error(f"Failed to process video {video_file}: {e}")
+    def find_subtitle(self, video_id: str, subtitle_id: int) -> Optional[Subtitle]:
+        subs = self._extract_subtitles(self.search_path.joinpath(video_id))
+        sub = [sub for sub in subs if sub.id == subtitle_id]
+        if len(sub) > 0:
+            return sub[0]
+        else:
+            return None
 
-                self._videos = videos
-                return videos
-        except Exception as e:
-            logger.exception("Failed to load videos")
-            raise
-
-    def _extract_subtitles(self, video_path: Path, video_id: int) -> List[Subtitle]:
+    def _extract_subtitles(self, video_path: Path) -> List[Subtitle]:
         """Extract subtitles from a video file."""
         try:
-            with log_time(f"subtitle_extraction_{video_id}"):
+            with log_time(f"subtitle_extraction_{video_path.as_uri()}"):
                 logger.debug(f"Extracting subtitles from {video_path}")
                 ssa_events, ok = extract_subs(str(video_path))
                 if ok:
@@ -72,7 +70,7 @@ class VideoProcessor:
                             start=event.start / 1000,  # Convert to seconds
                             end=event.end / 1000,
                             text=event.text,
-                            video_id=video_id
+                            video_id=video_path.as_uri()
                         )
                         for idx, event in enumerate(ssa_events)
                     ]
@@ -90,11 +88,6 @@ class VideoProcessor:
                 if errors:
                     return None, str(errors)
 
-                try:
-                    video = self._videos[settings.episode]
-                except IndexError:
-                    return None, "Invalid episode ID"
-
                 # Create a temporary directory that won't be automatically cleaned up
                 tmp_dir = Path(tempfile.mkdtemp())
                 output_clip = tmp_dir / 'clip.mp4'
@@ -107,7 +100,7 @@ class VideoProcessor:
                     str(output_path),
                     settings.text,
                     settings.caption,
-                    str(video.path),
+                    settings.video_id,
                     20,  # fps
                     settings.crop,
                     settings.boomerang,
@@ -123,25 +116,4 @@ class VideoProcessor:
                 return None, err
         except Exception as e:
             logger.exception("Failed to generate clip")
-            raise
-
-    def search_subtitles(self, query: Optional[str], video_id: Optional[int] = None) -> List[Subtitle]:
-        """Search subtitles across all videos or a specific video."""
-        try:
-            with log_time("subtitle_search"):
-                logger.debug(f"Searching subtitles with query: {query}, video_id: {video_id}")
-                videos = self.load_videos()
-                results = []
-
-                for video in videos:
-                    if video_id is not None and video.id != video_id:
-                        continue
-
-                    for sub in video.subs:
-                        if query is None or query.lower() in sub.text.lower():
-                            results.append(sub)
-
-                return results
-        except Exception as e:
-            logger.exception("Failed to search subtitles")
             raise

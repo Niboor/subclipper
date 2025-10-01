@@ -1,7 +1,6 @@
 <details
     id="video_selection_list"
     class="w-full dropdown flex flex-row justify-center"
-    hx-swap-oob="{{ 'true' if oob else 'false' }}"
 >
     <summary role="button" class="btn">Include: {{ 'All videos' if request.args.get('video') is none else videos[request.args.get('video')|int].title }}</summary>
     <ul
@@ -16,26 +15,41 @@
             hx-replace-url="true"
             hx-include="[name='q']"
         >
-            <a
-                class="{{ 'menu-active' if request.args.get('video') is none else '' }}"
-            >
-                All videos
-            </a>
+            <details open>
+                <summary
+                    class="{{ 'menu-active' if request.args.get('video') is none else '' }}"
+                >
+                    /
+                </summary>
+                <ul>
+                    {% if videos.children|length > 0 %}
+                    {% for video in videos.children recursive %}
+                        <li
+                            name="video"
+                            value="{{ video.value }}"
+                            hx-get="/?video={{ video.value }}"
+                            hx-trigger="click"
+                            hx-target="main"
+                            hx-replace-url="true"
+                            hx-include="[name='q']"
+                        >
+                            {% if video.children|length > 0 %}
+                            <details>
+                                <summary>{{ video.value }}/</summary>
+                                <ul>
+                                    {{ loop(video.children) }}
+                                </ul>
+                            </details>
+                            {% else %}
+                            <a class="{{ 'menu-active' if request.args.get('video') == video.value else '' }}">
+                                {{ video.value }}
+                            </a>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                    {% endif %}
+                </ul>
+            </details>
         </li>
-        {% for video in videos %}
-            <li
-                name="video"
-                value="{{ video.id }}"
-                hx-get="/?video={{ video['id'] }}"
-                hx-trigger="click"
-                hx-target="main"
-                hx-replace-url="true"
-                hx-include="[name='q']"
-            >
-                <a class="{{ 'menu-active' if request.args.get('video') == video.id|string else '' }}">
-                    {{ video.title }}
-                </a>
-            </li>
-        {% endfor %}
     </ul>
 </details>

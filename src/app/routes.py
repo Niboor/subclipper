@@ -30,8 +30,8 @@ def create_clip_settings_from_request() -> ClipSettings:
         text=request.args.get('text', '', type=str),
         crop=request.args.get('crop', False, type=bool),
         resolution=request.args.get('resolution', 500, type=int),
-        id=request.args.get('sub_id', -1, type=int),
-        episode=request.args.get('episode', -1, type=int),
+        subtitle_id=request.args.get('subtitle_id', -1, type=int),
+        video_id=request.args.get('video_id', '', type=str),
         font_size=request.args.get('font_size', 20, type=int),
         caption=request.args.get('caption', '', type=str),
         boomerang=request.args.get('boomerang', False, type=bool),
@@ -47,14 +47,13 @@ def get_public(path):
 
 @bp.route("/")
 def index():
-    search = request.args.get("q")
+    search = request.args.get("q") or ''
     video_id = request.args.get("video", None, type=int)
     page = request.args.get("page", 0, type=int)
     page_length = request.args.get("page_length", config.default_page_length, type=int)
     highlight = request.args.get("highlight", None, type=str)
 
-    videos = config.video_processor.load_videos()
-    subs = config.video_processor.search_subtitles(search, video_id)
+    subs = config.video_processor.search_subtitles('', search)
     sub_pages = [subs[x:x+page_length] for x in range(0, len(subs), page_length)]
     subs_from_page = sub_pages[page] if sub_pages else []
 
@@ -63,7 +62,7 @@ def index():
 
     return cached_render_template(
         template,
-        videos=videos,
+        videos=[],
         subs=subs_from_page,
         page_length=page_length,
         pages=sub_pages,
@@ -72,20 +71,29 @@ def index():
         oob=hx_request is not None
     )
 
-@bp.route("/locate/<video_id>/<sub_id>")
-def locate(video_id: str, sub_id: str):
-    video_id = int(video_id)
-    sub_id = int(sub_id)
+@bp.route("/videos")
+def videos():
+    video_tree = config.video_processor.get_tree('')
+    print(video_tree)
+    return cached_render_template(
+        'video_selection_list.html',
+        videos=video_tree,
+        video=None
+    )
+
+@bp.route("/locate/<video_id>/<subtitle_id>")
+def locate(video_id: str, raw_subtitle_id: str):
+    subtitle_id = int(raw_subtitle_id)
     page_length = request.args.get("page_length", config.default_page_length, type=int)
-    subs = config.video_processor.search_subtitles(None, None)
+    subs = config.video_processor.search_subtitles('', '')
     sub_pages = [subs[x:x+page_length] for x in range(0, len(subs), page_length)]
-    sub_page = [i for i, page in enumerate(sub_pages) if len([sub for sub in page if sub.id == sub_id and sub.video_id == video_id]) > 0] if sub_pages else []
+    sub_page = [i for i, page in enumerate(sub_pages) if len([sub for sub in page if sub.id == subtitle_id and sub.video_id == video_id]) > 0] if sub_pages else []
 
     if len(sub_page) == 0:
-        return f"no subtitle with id {sub_id} from video with id {video_id} found", 404
+        return f"no subtitle with id {subtitle_id} from video with id {video_id} found", 404
     
     resp = flask.Response("OK")
-    fragment_path = f"/?page={sub_page[0]}&page_length={page_length}#e{video_id}-s{sub_id}"
+    fragment_path = f"/?page={sub_page[0]}&page_length={page_length}#e{video_id}-s{subtitle_id}"
     resp.headers['HX-Location'] = json.dumps({"path": fragment_path, "target": "main"})
     resp.status_code = 200
 
@@ -93,22 +101,15 @@ def locate(video_id: str, sub_id: str):
     
 
 
-@bp.route("/sub_form/<video_id>/<sub_id>")
-def get_sub(video_id, sub_id):
-    videos = config.video_processor.load_videos()
-    try:
-        video = videos[int(video_id)]
-    except (IndexError, ValueError):
-        return "Video not found", 404
-
-    try:
-        sub = video.subs[int(sub_id)]
-    except (IndexError, ValueError):
+@bp.route("/sub_form/<video_id>/<subtitle_id>")
+def get_sub(video_id, subtitle_id):
+    sub = config.video_processor.find_subtitle(video_id, int(subtitle_id))
+    if sub is None:
         return "Subtitle not found", 404
 
     sub_data = {
-        'id': sub_id,
-        'episode': video.id,
+        'id': subtitle_id,
+        'episode': video_id,
         'start_time': sub.start,
         'end_time': sub.end,
         'text': sub.text,
@@ -123,7 +124,7 @@ def get_sub(video_id, sub_id):
 
     hx_request = request.headers.get("HX-Request")
     if hx_request is None:
-        return cached_render_template("root.html", sub_data=sub_data, videos=videos)
+        return cached_render_template("root.html", sub_data=sub_data, videos=[])
     else:
         return cached_render_template("tweak_modal.html", sub_data=sub_data)
 

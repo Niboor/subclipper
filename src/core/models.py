@@ -1,10 +1,16 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, TypeVar
+
+T = TypeVar('T')
+
+@dataclass
+class Tree[T]:
+    value: T
+    children: List['Tree[T]']
 
 @dataclass
 class Video:
-    id: int
     title: str
     path: Path
     subs: List['Subtitle']
@@ -15,7 +21,7 @@ class Subtitle:
     start: float
     end: float
     text: str
-    video_id: int
+    video_id: str
 
 @dataclass
 class ClipSettings:
@@ -26,8 +32,8 @@ class ClipSettings:
     text: str
     crop: bool
     resolution: int
-    id: int
-    episode: int
+    subtitle_id: int
+    video_id: str
     font_size: int
     caption: str
     boomerang: bool
@@ -45,8 +51,8 @@ class ClipSettings:
             errs['end'] = 'clip too long'
         if self.resolution < 50 or self.resolution > 1024:
             errs['resolution'] = 'resolution must be between 50 and 1024'
-        if self.episode < 0:
-            errs['episode'] = 'invalid episode id'
+        if self.video_id == '':
+            errs['video'] = 'invalid video id'
         if len(self.text) > 200:
             errs['text'] = 'subtitle text too large'
         if len(self.caption) > 200:
