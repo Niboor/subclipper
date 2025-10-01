@@ -17,7 +17,7 @@ class Video:
 
 @dataclass
 class Subtitle:
-    id: int
+    id: str
     start: float
     end: float
     text: str
@@ -32,7 +32,7 @@ class ClipSettings:
     text: str
     crop: bool
     resolution: int
-    subtitle_id: int
+    subtitle_id: str
     video_id: str
     font_size: int
     caption: str

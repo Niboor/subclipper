@@ -6,50 +6,8 @@
     <ul
         class="w-full menu dropdown-content bg-base-200 rounded-box min-h-12 shadow-sm"
     >
-        <li
-            name="video"
-            value=""
-            hx-get="/"
-            hx-trigger="click"
-            hx-target="main"
-            hx-replace-url="true"
-            hx-include="[name='q']"
-        >
-            <details open>
-                <summary
-                    class="{{ 'menu-active' if request.args.get('video') is none else '' }}"
-                >
-                    /
-                </summary>
-                <ul>
-                    {% if videos.children|length > 0 %}
-                    {% for video in videos.children recursive %}
-                        <li
-                            name="video"
-                            value="{{ video.value }}"
-                            hx-get="/?video={{ video.value }}"
-                            hx-trigger="click"
-                            hx-target="main"
-                            hx-replace-url="true"
-                            hx-include="[name='q']"
-                        >
-                            {% if video.children|length > 0 %}
-                            <details>
-                                <summary>{{ video.value }}/</summary>
-                                <ul>
-                                    {{ loop(video.children) }}
-                                </ul>
-                            </details>
-                            {% else %}
-                            <a class="{{ 'menu-active' if request.args.get('video') == video.value else '' }}">
-                                {{ video.value }}
-                            </a>
-                            {% endif %}
-                        </li>
-                    {% endfor %}
-                    {% endif %}
-                </ul>
-            </details>
-        </li>
+        {% with path=videos, root=videos %}
+            {% include "filesystem_list_item.html" %}
+        {% endwith %}
     </ul>
 </details>

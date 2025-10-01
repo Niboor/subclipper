@@ -3,6 +3,7 @@ from flask import Response, Blueprint, render_template, request, send_file, send
 from pathlib import Path
 import logging
 from typing import Optional
+import urllib.parse
 
 import flask
 
@@ -30,7 +31,7 @@ def create_clip_settings_from_request() -> ClipSettings:
         text=request.args.get('text', '', type=str),
         crop=request.args.get('crop', False, type=bool),
         resolution=request.args.get('resolution', 500, type=int),
-        subtitle_id=request.args.get('subtitle_id', -1, type=int),
+        subtitle_id=request.args.get('subtitle_id', "", type=str),
         video_id=request.args.get('video_id', '', type=str),
         font_size=request.args.get('font_size', 20, type=int),
         caption=request.args.get('caption', '', type=str),
@@ -45,55 +46,87 @@ def get_public(path):
     """Serve static files from the static directory."""
     return send_from_directory("static", path)
 
+# @bp.route("/")
+# def index():
+#     search = request.args.get("q") or ''
+#     video_id = request.args.get("video", None, type=int)
+#     page = request.args.get("page", 0, type=int)
+#     page_length = request.args.get("page_length", config.default_page_length, type=int)
+#     highlight = request.args.get("highlight", None, type=str)
+
+#     subs = config.video_processor.search_subtitles('', search)
+#     sub_pages = [subs[x:x+page_length] for x in range(0, len(subs), page_length)]
+#     subs_from_page = sub_pages[page] if sub_pages else []
+
+#     hx_request = request.headers.get("HX-Request")
+#     template = "root.html" if hx_request is None else "subtitles.html"
+
+#     return cached_render_template(
+#         template,
+#         videos=[],
+#         subs=subs_from_page,
+#         page_length=page_length,
+#         pages=sub_pages,
+#         sub_data=None,
+#         url=None,
+#         oob=hx_request is not None
+#     )
+
 @bp.route("/")
 def index():
-    search = request.args.get("q") or ''
-    video_id = request.args.get("video", None, type=int)
+    path = request.args.get("path", None, type=str)
+    filter = request.args.get("filter", '', type=str)
+    selected = request.args.get("selected", None, type=str)
     page = request.args.get("page", 0, type=int)
     page_length = request.args.get("page_length", config.default_page_length, type=int)
-    highlight = request.args.get("highlight", None, type=str)
-
-    subs = config.video_processor.search_subtitles('', search)
-    sub_pages = [subs[x:x+page_length] for x in range(0, len(subs), page_length)]
-    subs_from_page = sub_pages[page] if sub_pages else []
 
     hx_request = request.headers.get("HX-Request")
-    template = "root.html" if hx_request is None else "subtitles.html"
+    if path is None and filter == '':
+        template = "root.html" if hx_request is None else "index.html"
+        return cached_render_template(
+            template,
+            sub_data=None,
+            url=None,
+            errs=None,
+        )
+    else:
+        subs = config.video_processor.search_subtitles((path if path != '/' else '') or '', filter)
+        sub_pages = [subs[x:x+page_length] for x in range(0, len(subs), page_length)]
+        subs_from_page = sub_pages[page] if sub_pages and sub_pages[page] else []
 
-    return cached_render_template(
-        template,
-        videos=[],
-        subs=subs_from_page,
-        page_length=page_length,
-        pages=sub_pages,
-        sub_data=None,
-        url=None,
-        oob=hx_request is not None
-    )
+        template = "root.html" if hx_request is None else "subtitles.html"
+        return cached_render_template(
+            template,
+            sub_data=None,
+            url=None,
+            errs=None,
 
-@bp.route("/videos")
+            subs=subs_from_page,
+            page_length=page_length,
+            pages=sub_pages,
+        )
+
+@bp.route("/files")
 def videos():
-    video_tree = config.video_processor.get_tree('')
-    print(video_tree)
+    root_path = config.video_processor.get_path('')
     return cached_render_template(
-        'video_selection_list.html',
-        videos=video_tree,
-        video=None
+        'filesystem_list_item.html',
+        path=root_path,
+        root=root_path
     )
 
-@bp.route("/locate/<video_id>/<subtitle_id>")
-def locate(video_id: str, raw_subtitle_id: str):
-    subtitle_id = int(raw_subtitle_id)
+@bp.route("/locate/<subtitle_id>")
+def locate(subtitle_id: str):
     page_length = request.args.get("page_length", config.default_page_length, type=int)
     subs = config.video_processor.search_subtitles('', '')
     sub_pages = [subs[x:x+page_length] for x in range(0, len(subs), page_length)]
-    sub_page = [i for i, page in enumerate(sub_pages) if len([sub for sub in page if sub.id == subtitle_id and sub.video_id == video_id]) > 0] if sub_pages else []
+    sub_page = [i for i, page in enumerate(sub_pages) if len([sub for sub in page if sub.id == subtitle_id]) > 0] if sub_pages else []
 
     if len(sub_page) == 0:
-        return f"no subtitle with id {subtitle_id} from video with id {video_id} found", 404
+        return f"no subtitle with id {subtitle_id} found", 404
     
     resp = flask.Response("OK")
-    fragment_path = f"/?page={sub_page[0]}&page_length={page_length}#e{video_id}-s{subtitle_id}"
+    fragment_path = f"/?path=.&page={sub_page[0]}&page_length={page_length}#id{subtitle_id}"
     resp.headers['HX-Location'] = json.dumps({"path": fragment_path, "target": "main"})
     resp.status_code = 200
 
@@ -101,15 +134,15 @@ def locate(video_id: str, raw_subtitle_id: str):
     
 
 
-@bp.route("/sub_form/<video_id>/<subtitle_id>")
-def get_sub(video_id, subtitle_id):
-    sub = config.video_processor.find_subtitle(video_id, int(subtitle_id))
+@bp.route("/sub_form/<path:subtitle_id>")
+def get_sub(subtitle_id: str):
+    sub = config.video_processor.find_subtitle(subtitle_id)
     if sub is None:
         return "Subtitle not found", 404
 
     sub_data = {
         'id': subtitle_id,
-        'episode': video_id,
+        'video_id': sub.video_id,
         'start_time': sub.start,
         'end_time': sub.end,
         'text': sub.text,

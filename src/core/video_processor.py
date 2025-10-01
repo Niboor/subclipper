@@ -5,6 +5,7 @@ import tempfile
 import os
 import time
 from contextlib import contextmanager
+import base64
 
 from .models import Tree, Video, Subtitle, ClipSettings
 from subs.subs import (extract_subs, generate_video)
@@ -26,14 +27,15 @@ class VideoProcessor:
         self.font_path = font_path
         logger.info(f"Initialized VideoProcessor with search_path: {search_path}, font_path: {font_path}")
 
-    def get_tree(self, search_subpath: str) -> Tree[str]:
+    def get_path(self, search_subpath: str) -> Path:
         subpath = self.search_path.joinpath(search_subpath)
-        def convert_tree_rec(file: Path) -> Tree[str]:
-            return Tree(
-                value=file.relative_to(self.search_path).__str__(),
-                children=[] if file.is_file() else [convert_tree_rec(child) for child in file.iterdir()]
-            )
-        return convert_tree_rec(subpath)
+        return subpath
+        # def convert_tree_rec(file: Path) -> Tree[str]:
+        #     return Tree(
+        #         value=file.relative_to(self.search_path).__str__(),
+        #         children=[] if file.is_file() else [convert_tree_rec(child) for child in file.iterdir()]
+        #     )
+        # return convert_tree_rec(subpath)
 
     def search_subtitles(self, search_subpath: str, search_string: str) -> List[Subtitle]:
         subpath = self.search_path.joinpath(search_subpath)
@@ -49,9 +51,11 @@ class VideoProcessor:
                 return [sub for subs in [extract_subs_rec(f) for f in file.iterdir()] for sub in subs]
         return extract_subs_rec(subpath)
 
-    def find_subtitle(self, video_id: str, subtitle_id: int) -> Optional[Subtitle]:
+    def find_subtitle(self, subtitle_id: str) -> Optional[Subtitle]:
+        subtitle_id_unquoted = base64.urlsafe_b64decode(subtitle_id).__str__()
+        [video_id, subtitle_idx] = subtitle_id_unquoted.rsplit('/', 1)
         subs = self._extract_subtitles(self.search_path.joinpath(video_id))
-        sub = [sub for sub in subs if sub.id == subtitle_id]
+        sub = [sub for idx, sub in enumerate(subs) if str(idx) == subtitle_idx]
         if len(sub) > 0:
             return sub[0]
         else:
@@ -59,18 +63,19 @@ class VideoProcessor:
 
     def _extract_subtitles(self, video_path: Path) -> List[Subtitle]:
         """Extract subtitles from a video file."""
+        video_id = video_path.relative_to(self.search_path).__str__()
         try:
-            with log_time(f"subtitle_extraction_{video_path.as_uri()}"):
-                logger.debug(f"Extracting subtitles from {video_path}")
+            with log_time(f"subtitle_extraction_{video_id}"):
+                logger.debug(f"Extracting subtitles from {video_id}")
                 ssa_events, ok = extract_subs(str(video_path))
                 if ok:
                     return [
                         Subtitle(
-                            id=idx,
+                            id=base64.urlsafe_b64encode(bytes(f"{video_id}/{idx}", "utf-8")).decode("utf-8"),
                             start=event.start / 1000,  # Convert to seconds
                             end=event.end / 1000,
                             text=event.text,
-                            video_id=video_path.as_uri()
+                            video_id=video_id
                         )
                         for idx, event in enumerate(ssa_events)
                     ]
@@ -94,21 +99,21 @@ class VideoProcessor:
                 output_path = tmp_dir / f'clip.{settings.format}'
 
                 err, ok = generate_video(
-                    settings.start_time,
-                    settings.end_time,
-                    str(output_clip),
-                    str(output_path),
-                    settings.text,
-                    settings.caption,
-                    settings.video_id,
-                    20,  # fps
-                    settings.crop,
-                    settings.boomerang,
-                    settings.resolution,
-                    self.font_path,
-                    settings.font_size,
-                    settings.colour,
-                    settings.format
+                    start_time=settings.start_time,
+                    end_time=settings.end_time,
+                    output_clip=str(output_clip),
+                    output_path=str(output_path),
+                    custom_text=settings.text,
+                    caption=settings.caption,
+                    input_path=self.search_path.joinpath(settings.video_id),
+                    fps=20,  # fps
+                    crop=settings.crop,
+                    boomerang=settings.boomerang,
+                    resolution=settings.resolution,
+                    font=self.font_path,
+                    font_size=settings.font_size,
+                    fancy_colors=settings.colour,
+                    format_type=settings.format
                 )
 
                 if ok:

@@ -1,0 +1,50 @@
+{% set relative_path = path.relative_to(root) %}
+<li
+    class="h-full overflow-auto"
+    name="video"
+    value=""
+>
+    {% if path.is_file() %}
+    <div class="flex flex-row gap-2">
+        {% include "icons/document.html" %}
+        <a
+            class="{{ 'menu-active' if request.args.get('video') == relative_path else '' }}"
+
+            hx-get="/?path={{ relative_path }}"
+            hx-target="main"
+            hx-push-url="true"
+        >
+            {{ relative_path.name }}
+        </a>
+    </div>
+    {% else %}
+    <details
+        {% if relative_path == '.' %}
+        open
+        {% endif %}
+    >
+        <summary>
+            <div class="tooltip tooltip-right" data-tip="Search in this directory">
+                <button
+                    class="btn btn-sm btn-circle btn-ghost p-0"
+                    hx-get="/?path={{ relative_path }}"
+                    hx-target="main"
+                    hx-push-url="true"
+                >
+                    {% include "icons/folder-open.html" %}
+                </button>
+            </div>
+            <a>
+                {{ relative_path.name }}/
+            </a>
+        </summary>
+        <ul>
+            {% for child in path.iterdir() %}
+            {% with path=child, root=root %}
+                {% include "filesystem_list_item.html" %}
+            {% endwith %}
+            {% endfor %}
+        </ul>
+    </details>
+    {% endif %}
+</li>

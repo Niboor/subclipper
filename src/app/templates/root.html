@@ -32,16 +32,14 @@
                     <input
                         id="search"
                         class="grow"
-                        name="q"
+                        name="filter"
                         type="search"
                         placeholder="Search for a subtitle..."
-                        value="{{ request.args.get('q') or '' }}"
-                        hx-get="/"
+                        value="{{ request.args.get('filter') or '' }}"
+                        hx-get
                         hx-trigger="search, keyup delay:200ms changed"
                         hx-target="main"
                         hx-replace-url="true"
-                        hx-ext="preserve-params"
-                        preserve-params="video"
                         style="width: 100%;"
                     />
                 </label>
@@ -61,7 +59,7 @@
         hx-ext="preserve-params"
         hx-get="/"
         hx-trigger="load"
-        hx-include="[name='q']"
+        hx-include="[name='filter']"
     >
     </main>
     <div id="modal-container">
