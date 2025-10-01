@@ -5,11 +5,11 @@ import {fileURLToPath, URL} from 'node:url';
 export default defineConfig({
   build: {
     lib: {
-      entry: resolve(__dirname, "subclipper/scripts/main.ts"),
+      entry: resolve(__dirname, "src/scripts/main.ts"),
       name: "subclipper",
       fileName: "main",
     },
-    outDir: `subclipper/app/static/dist`,
+    outDir: `src/app/static/dist`,
   },
   plugins: [
     tailwindcss(),

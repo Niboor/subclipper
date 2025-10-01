@@ -2,9 +2,9 @@ FROM node:22 AS yarn
 WORKDIR /yarn
 
 COPY package.json yarn.lock tsconfig.json vite.config.ts ./
-COPY subclipper/app/static ./subclipper/app/static
-COPY subclipper/scripts ./subclipper/scripts
-COPY subclipper/app/templates ./subclipper/app/templates
+COPY src/app/static ./src/app/static
+COPY src/scripts ./src/scripts
+COPY src/app/templates ./src/app/templates
 RUN yarn --frozen-lockfile
 RUN yarn build
 
@@ -25,7 +25,7 @@ RUN wget https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-${FFM
 
 WORKDIR /app
 COPY . .
-COPY --from=yarn /yarn/subclipper/app/static/dist ./subclipper/app/static/dist
+COPY --from=yarn /yarn/src/app/static/dist ./src/app/static/dist
 RUN pip install --break-system-packages gunicorn && pip install --break-system-packages -e .
 
 EXPOSE 8000

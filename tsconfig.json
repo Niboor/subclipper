@@ -20,5 +20,5 @@
     "allowSyntheticDefaultImports": true,
     "strictNullChecks": true,
   },
-  "include": ["subclipper/scripts"]
+  "include": ["src/scripts"]
 }

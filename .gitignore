@@ -49,9 +49,6 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# CSS
-subclipper/app/static/tailwind.css
-
 # Misc
 .DS_Store
 *.log
@@ -60,3 +57,28 @@ subclipper/app/static/tailwind.css
 *.backup
 *.orig
 *.rej
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

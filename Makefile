@@ -8,7 +8,7 @@ DOCKER_IMAGE = subclipper
 DOCKER_TAG = latest
 
 # Environment variables
-SEARCH_PATH ?= $(shell pwd)/subclipper/samples
+SEARCH_PATH ?= $(shell pwd)/src/samples
 SHOW_NAME ?= Subclipper Test
 
 .PHONY: help venv install test run docker-build docker-run clean tailwind
@@ -45,7 +45,7 @@ yarn:
 # Development targets
 test:
 	@echo "Running tests..."
-	$(PYTHON) -m pytest subclipper/tests/ -v
+	$(PYTHON) -m pytest src/tests/ -v
 
 run: yarn
 	@echo "Starting development server..."
@@ -63,7 +63,7 @@ docker-build:
 docker-run:
 	@echo "Running Docker container..."
 	docker run -p 8000:8000 \
-		-e SEARCH_PATH=/app/subclipper/samples \
+		-e SEARCH_PATH=/app/src/samples \
 		-e SHOW_NAME="$(SHOW_NAME)" \
 		$(DOCKER_IMAGE):$(DOCKER_TAG)
 
