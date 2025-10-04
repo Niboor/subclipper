@@ -34,8 +34,10 @@ async function main() {
             // Query parameters sent to that path
             const params = event.detail.path.split("?")[1] || ""
             const nextSearchParams = new URLSearchParams(params)
+            console.log(`nextSearchParams: `, nextSearchParams)
             // The query parameters currently in the browser's URL, filtering out the params that should not be preserved
             const currentSearchParams = new URLSearchParams(window.location.search)
+            console.log(`currentSearchParams before: `, currentSearchParams)
             if(onlyPreserveTheseParams !== undefined) {
               currentSearchParams.forEach((_, key) => {
                 if(!onlyPreserveTheseParams.includes(key)) {
@@ -43,20 +45,19 @@ async function main() {
                 }
               })
             }
+            console.log(`currentSearchParams after: `, currentSearchParams)
 
             // The names of the query parameters, made unique
             const keys = new Set([...currentSearchParams.keys(), ...nextSearchParams.keys()])
-            // All the keys that should be taken from `nextSearchParams` and not from `currentSearchParams`
-            const excludeKeys = new Set(new URLSearchParams(event.detail.formData).keys())
+            console.log(`keys: `, keys)
             const newSearchParams = new URLSearchParams()
             keys.forEach(key => {
-                if(!excludeKeys.has(key)) {
-                  const searchParams = nextSearchParams.get(key) ?? currentSearchParams.get(key)
-                  if(searchParams !== null) {
-                    newSearchParams.set(key, searchParams)
-                  }
+                const searchParams = nextSearchParams.get(key) ?? currentSearchParams.get(key)
+                if(searchParams !== null) {
+                  newSearchParams.set(key, searchParams)
                 }
             })
+            console.log(`newSearchParams: `, newSearchParams)
             event.detail.path = `${path}?${newSearchParams.toString()}`
         }
         return true
@@ -68,6 +69,7 @@ async function main() {
   htmx.on(`htmx:afterSwap`, (event: Event & { detail: SwapOptions["eventInfo"] }) => {
     const hashFragment = event.detail.pathInfo.requestPath.split(`#`).at(1)
     if(hashFragment !== undefined && hashFragment !== ``) {
+      console.log(`updooting hash`)
       window.location.hash = hashFragment;
     }
   })

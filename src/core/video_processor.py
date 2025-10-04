@@ -6,6 +6,7 @@ import os
 import time
 from contextlib import contextmanager
 import base64
+import codecs
 
 from .models import Tree, Video, Subtitle, ClipSettings
 from subs.subs import (extract_subs, generate_video)
@@ -52,7 +53,7 @@ class VideoProcessor:
         return extract_subs_rec(subpath)
 
     def find_subtitle(self, subtitle_id: str) -> Optional[Subtitle]:
-        subtitle_id_unquoted = base64.urlsafe_b64decode(subtitle_id).__str__()
+        subtitle_id_unquoted = bytes.fromhex(subtitle_id).decode("utf-8")
         [video_id, subtitle_idx] = subtitle_id_unquoted.rsplit('/', 1)
         subs = self._extract_subtitles(self.search_path.joinpath(video_id))
         sub = [sub for idx, sub in enumerate(subs) if str(idx) == subtitle_idx]
@@ -71,7 +72,7 @@ class VideoProcessor:
                 if ok:
                     return [
                         Subtitle(
-                            id=base64.urlsafe_b64encode(bytes(f"{video_id}/{idx}", "utf-8")).decode("utf-8"),
+                            id=f"{video_id}/{idx}".encode("utf-8").hex(),
                             start=event.start / 1000,  # Convert to seconds
                             end=event.end / 1000,
                             text=event.text,

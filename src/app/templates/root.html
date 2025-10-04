@@ -40,18 +40,14 @@
                         hx-trigger="search, keyup delay:200ms changed"
                         hx-target="main"
                         hx-replace-url="true"
+                        hx-ext="preserve-params"
+                        preserve-params="path"
                         style="width: 100%;"
                     />
                 </label>
             </div>
             <div class="flex w-full flex-1">
             </div>
-        </div>
-        <div
-            hx-get="/videos"
-            hx-trigger="load"
-        >
-
         </div>
     </header>
     <main

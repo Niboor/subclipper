@@ -14,7 +14,7 @@
             <ul class="list bg-base-100 rounded-box shadow-md">
                 {% for sub in subs %}
                     <li
-                        id="{{ sub.id }}"
+                        id="id{{ sub.id }}"
                         class="list-row hover:bg-base-200 cursor-pointer transition-colors target:bg-primary target:hover:bg-primary/50"
                         hx-get="/sub_form/{{ sub['id'] }}"
                         hx-replace-url="true"
