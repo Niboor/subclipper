@@ -82,3 +82,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# SQLite
+**/*.sqlite
+**/*.sqlite-journal

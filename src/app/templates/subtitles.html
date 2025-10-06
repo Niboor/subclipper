@@ -15,27 +15,31 @@
                 {% for sub in subs %}
                     <li
                         id="id{{ sub.id }}"
-                        class="list-row hover:bg-base-200 cursor-pointer transition-colors target:bg-primary target:hover:bg-primary/50"
+                        class="list-row hover:bg-base-200 cursor-pointer transition-colors target:bg-primary target:hover:bg-primary/50 items-center"
                         hx-get="/sub_form/{{ sub['id'] }}"
                         hx-replace-url="true"
                         hx-target="#modal-container"
                         hx-ext="preserve-params"
                     >
-                        <div class="flex flex-col items-start">
+                        <div class="list-col-grow flex flex-col items-start">
                             <div class="flex flex-row gap-2">
                                 <div class="text-xs uppercase font-semibold opacity-60">{{ sub.video_id }}</div>
-                                <a
-                                    hx-get="/locate/{{ sub.id }}"
-                                    hx-trigger="click consume"
-                                    preserve-params="false"
-                                    hx-target="main"
-                                    hx-replace-url="true"
-                                    class="text-xs uppercase italic opacity-60 color-info hover:underline"
-                                >
-                                    #{{ sub.id }}
-                                </a>
                             </div>
-                            <div>{{ sub.text }}</div>
+                            <div>
+                                {{ sub.text }}
+                            </div>
+                        </div>
+                        <div class="tooltip tooltip-left" data-tip="Locate this subtitle chronologically">
+                            <button
+                                class="btn btn-circle btn-ghost"
+                                hx-get="/locate/{{ sub.id }}"
+                                hx-trigger="click consume"
+                                preserve-params="false"
+                                hx-target="main"
+                                hx-replace-url="true"
+                            >
+                                {% include "icons/arrow-turn-down-left.html" %}
+                            </button>
                         </div>
                     </li>
                 {% endfor %}

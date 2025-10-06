@@ -2,13 +2,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, TypeVar
 
-T = TypeVar('T')
-
-@dataclass
-class Tree[T]:
-    value: T
-    children: List['Tree[T]']
-
 @dataclass
 class Video:
     title: str

@@ -1,6 +1,6 @@
 import pytest
 from pathlib import Path
-from subclipper.core.models import Video, Subtitle, ClipSettings
+from core.models import Video, Subtitle, ClipSettings
 
 def test_video_creation():
     video = Video(

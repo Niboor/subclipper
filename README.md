@@ -61,7 +61,6 @@ The application will be available at http://localhost:5000
 The application requires the following environment variables:
 
 - `SEARCH_PATH` (required): Directory where the application will look for video files
-- `SHOW_NAME`: Name of the show (defaults to "Subclipper Test")
 
 The application also has the following optional environment variables:
 - `DEFAULT_PAGE_LENGTH`: the amount of subtitles shown on each page, defaults to 50 if not set
@@ -69,7 +68,7 @@ The application also has the following optional environment variables:
 These are automatically set when using `make run`, but you can override them:
 
 ```bash
-SEARCH_PATH=/path/to/videos SHOW_NAME="My Show" make run
+SEARCH_PATH=/path/to/videos make run
 ```
 
 ## Development

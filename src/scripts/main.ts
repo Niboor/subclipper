@@ -10,6 +10,7 @@ async function main() {
   (window as any).htmx = htmx;
   
   await import("htmx-ext-response-targets")
+  await import("htmx-ext-sse")
   
   // Custom HTMX extensions can be defined here
   // Ensure the existing query parameters in the current URL are preserved, only changing those that are requested to be changed
@@ -34,10 +35,8 @@ async function main() {
             // Query parameters sent to that path
             const params = event.detail.path.split("?")[1] || ""
             const nextSearchParams = new URLSearchParams(params)
-            console.log(`nextSearchParams: `, nextSearchParams)
             // The query parameters currently in the browser's URL, filtering out the params that should not be preserved
             const currentSearchParams = new URLSearchParams(window.location.search)
-            console.log(`currentSearchParams before: `, currentSearchParams)
             if(onlyPreserveTheseParams !== undefined) {
               currentSearchParams.forEach((_, key) => {
                 if(!onlyPreserveTheseParams.includes(key)) {
@@ -45,11 +44,9 @@ async function main() {
                 }
               })
             }
-            console.log(`currentSearchParams after: `, currentSearchParams)
 
             // The names of the query parameters, made unique
             const keys = new Set([...currentSearchParams.keys(), ...nextSearchParams.keys()])
-            console.log(`keys: `, keys)
             const newSearchParams = new URLSearchParams()
             keys.forEach(key => {
                 const searchParams = nextSearchParams.get(key) ?? currentSearchParams.get(key)
@@ -57,7 +54,6 @@ async function main() {
                   newSearchParams.set(key, searchParams)
                 }
             })
-            console.log(`newSearchParams: `, newSearchParams)
             event.detail.path = `${path}?${newSearchParams.toString()}`
         }
         return true

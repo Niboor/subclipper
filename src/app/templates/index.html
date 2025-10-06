@@ -1,6 +1,38 @@
-<ul
-    class="w-full h-full menu menu-vertical flex-nowrap"
-    hx-get="/files"
-    hx-trigger="load"
->
-</ul>
+<div class="flex flex-col gap-8 h-full w-full">
+    <div class="flex flex-col flex-initial gap-2 items-center">
+        <h1 class="text-4xl font-bold">Welcome to Subclipper!</h1>
+        <p>
+            Subclipper lets you easily create GIFs for all your media based on subtitles.
+            Below, select a folder to search in, or use the search bar above.
+        </p>
+    </div>
+    <div class="flex flex-col flex-auto bg-base-200 rounded h-full overflow-auto">
+        <ul
+            class="w-full h-full menu menu-vertical flex-nowrap"
+            hx-get="/files"
+            hx-trigger="load"
+        >
+            <div class="flex flex-col gap-2 overflow-hidden">
+                <div class="skeleton w-full h-12"></div>
+                <div class="skeleton w-full h-12 ml-8"></div>
+                <div class="skeleton w-full h-12 ml-8"></div>
+                <div class="skeleton w-full h-12 ml-8"></div>
+                <div class="skeleton w-full h-12 ml-8"></div>
+                <div class="skeleton w-full h-12 ml-8"></div>
+                <div class="skeleton w-full h-12 ml-8"></div>
+                <div class="skeleton w-full h-12 ml-8"></div>
+                <div class="skeleton w-full h-12 ml-8"></div>
+                <div class="skeleton w-full h-12 ml-8"></div>
+                <div class="skeleton w-full h-12 ml-8"></div>
+                <div class="skeleton w-full h-12 ml-8"></div>
+                <div class="skeleton w-full h-12 ml-8"></div>
+                <div class="skeleton w-full h-12 ml-8"></div>
+                <div class="skeleton w-full h-12 ml-8"></div>
+                <div class="skeleton w-full h-12 ml-8"></div>
+                <div class="skeleton w-full h-12 ml-8"></div>
+                <div class="skeleton w-full h-12 ml-8"></div>
+                <div class="skeleton w-full h-12 ml-8"></div>
+            </div>
+        </ul>
+    </div>
+</div>

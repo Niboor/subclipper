@@ -19,7 +19,7 @@
     </div>
     {% else %}
     <details
-        {% if relative_path == '.' %}
+        {% if relative_path.name == '' %}
         open
         {% endif %}
     >
@@ -34,9 +34,14 @@
                     {% include "icons/folder-open.html" %}
                 </button>
             </div>
-            <a>
-                {{ relative_path.name }}/
-            </a>
+            <div class="flex flex-row gap-4">
+                <div>
+                    {{ relative_path.name }}/
+                </div>
+                {% if relative_path.name == '' %}
+                <div class="italic text-sm">All Files</div>
+                {% endif %}
+            </div>
         </summary>
         <ul>
             {% for child in path.iterdir() %}

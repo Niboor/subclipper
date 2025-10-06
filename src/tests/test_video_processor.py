@@ -2,8 +2,8 @@ import pytest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 import platform
-from subclipper.core.video_processor import VideoProcessor
-from subclipper.core.models import Video, Subtitle, ClipSettings
+from core.video_processor import VideoProcessor
+from core.models import Video, Subtitle, ClipSettings
 
 def get_system_font():
     """Get the system default font path based on the operating system."""
@@ -96,7 +96,7 @@ def test_generate_clip(video_processor, system_font_path, sample_video_path):
         font_path=system_font_path
     )
     
-    with patch('subclipper.core.video_processor.generate_video') as mock_generate_video:
+    with patch('core.video_processor.generate_video') as mock_generate_video:
         mock_generate_video.return_value = (None, True)
         output_path, error = video_processor.generate_clip(settings)
         assert error is None
@@ -136,7 +136,7 @@ def test_generate_clip_error_handling(video_processor, system_font_path, sample_
         font_path=system_font_path
     )
     
-    with patch('subclipper.core.video_processor.generate_video') as mock_generate_video:
+    with patch('core.video_processor.generate_video') as mock_generate_video:
         mock_generate_video.return_value = ("Error generating video", False)
         output_path, error = video_processor.generate_clip(settings)
         assert error == "Error generating video"

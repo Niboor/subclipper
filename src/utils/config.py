@@ -2,17 +2,20 @@ import os
 import logging
 from pathlib import Path
 import sys
+from ..core.video_processor import VideoProcessor
+from ..core.subtitle_indexer import SubtitleIndexer
 
 logger = logging.getLogger(__name__)
 
 class Config:
     def __init__(self):
         self.search_path = Path(self._get_required_env('SEARCH_PATH'))
-        self.show_name = self._get_required_env('SHOW_NAME')
+        self.sqlite_path = self._get_optional_env('SQLITE_PATH', ':memory:')
         self.default_page_length = int(self._get_optional_env('DEFAULT_PAGE_LENGTH', '50'))
         self.font_path = self._find_font()
-        logger.info(f"Initialized Config with search_path: {self.search_path}, show_name: {self.show_name}, font_path: {self.font_path}")
+        logger.info(f"Initialized Config with search_path: {self.search_path}, font_path: {self.font_path}")
         self._video_processor = None
+        self.subtitle_indexer = SubtitleIndexer(self.search_path, self.sqlite_path)
         
     def _get_required_env(self, name: str) -> str:
         """Get a required environment variable. If it is not present, the program will panic."""
@@ -39,6 +42,5 @@ class Config:
     def video_processor(self):
         """Get the VideoProcessor instance, creating it if necessary."""
         if self._video_processor is None:
-            from ..core.video_processor import VideoProcessor
             self._video_processor = VideoProcessor(self.search_path, self.font_path)
-        return self._video_processor 
+        return self._video_processor

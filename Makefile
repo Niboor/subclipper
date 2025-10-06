@@ -9,7 +9,6 @@ DOCKER_TAG = latest
 
 # Environment variables
 SEARCH_PATH ?= $(shell pwd)/src/samples
-SHOW_NAME ?= Subclipper Test
 
 .PHONY: help venv install test run docker-build docker-run clean tailwind
 
@@ -52,8 +51,8 @@ run: yarn
 	FLASK_APP=src.app \
 	FLASK_ENV=development \
 	SEARCH_PATH=$(SEARCH_PATH) \
-	SHOW_NAME="$(SHOW_NAME)" \
-	$(PYTHON) -m flask run --debug
+	# $(PYTHON) -m flask run --debug
+	gunicorn "src.app:create_app()" -w 1 --threads 10 -b 127.0.0.1:5000
 
 # Docker targets
 docker-build:
@@ -64,7 +63,6 @@ docker-run:
 	@echo "Running Docker container..."
 	docker run -p 8000:8000 \
 		-e SEARCH_PATH=/app/src/samples \
-		-e SHOW_NAME="$(SHOW_NAME)" \
 		$(DOCKER_IMAGE):$(DOCKER_TAG)
 
 # Cleanup

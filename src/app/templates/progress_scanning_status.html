@@ -1,0 +1,9 @@
+<div class="flex flex-row gap-2">
+    {% if progress is none %}
+        <div class="loading loading-sm loading-ring"></div>
+        <div>Checking cache...</div>
+    {% elif progress < 1 %}
+        <div class="loading loading-sm" ></div>
+        <div>Scanning all files... {{ (progress * 100)|round }}%</div>
+    {% endif %}
+</div>

@@ -3,6 +3,8 @@ from logging.config import dictConfig
 from pathlib import Path
 import os
 
+from ..utils.config import Config
+
 def create_app():
     dictConfig({
         'version': 1,

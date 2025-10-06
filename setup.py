@@ -20,7 +20,7 @@ setup(
     },
     entry_points={
         "console_scripts": [
-            "subclipper=subclipper.__main__:main",
+            "subclipper=src.__main__:main",
         ],
     },
 ) 

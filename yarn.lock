@@ -537,6 +537,13 @@ htmx-ext-response-targets@^2.0.3:
   dependencies:
     htmx.org "^2.0.2"
 
+htmx-ext-sse@^2.2.3:
+  version "2.2.3"
+  resolved "https://registry.yarnpkg.com/htmx-ext-sse/-/htmx-ext-sse-2.2.3.tgz#b5f0296c55f226539e43af5de2faa614106c4384"
+  integrity sha512-DDahTngA+XSUeX4/EFAzAGDkvY8pdr/FmelHzag0FvZpUOh41G08P1fwp+jfFZCQphkA7/z06l90FN4iyD6O2w==
+  dependencies:
+    htmx.org "^2.0.2"
+
 htmx.org@^2.0.2, htmx.org@^2.0.6:
   version "2.0.6"
   resolved "https://registry.yarnpkg.com/htmx.org/-/htmx.org-2.0.6.tgz#42573483c72112e7e332dfe93043cd0eb32cda01"

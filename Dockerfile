@@ -30,4 +30,4 @@ RUN pip install --break-system-packages gunicorn && pip install --break-system-p
 
 EXPOSE 8000
 
-CMD ["gunicorn", "subclipper.app:create_app()", "--log-level", "debug", "-b", ":8000", "--preload"]
+CMD ["gunicorn", "src.app:create_app()", "--log-level", "debug", "-b", ":8000", "--preload"]

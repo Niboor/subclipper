@@ -3,7 +3,7 @@
 <head>
     <meta charset='utf-8'>
     <meta http-equiv='X-UA-Compatible' content='IE=edge'>
-    <title>{{ show_name }} Clip generator</title>
+    <title>Subclipper Clip generator</title>
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
     <link rel="icon" type="image/svg+xml" href="/public/favicon.svg">
     <link rel="alternate icon" type="image/png" href="/public/favicon.png">
@@ -15,14 +15,25 @@
 </head>
 <body
     hx-boost="true"
-    hx-ext="response-targets"
+    hx-ext="response-targets, sse"
     class="h-screen w-full flex flex-col"
 >
     <header class="flex-none">
         <div class="navbar bg-base-100 shadow-sm flex flex-col md:flex-row !p-0">
-            <h1 class="flex-1 text-xl md:text-3xl p-2 text-center md:text-left">
-                {{ show_name }} Clip generator
-            </h1>
+            <div
+                class="flex-1 flex flex-row gap-2 px-4 cursor-pointer"
+                hx-get="/"
+                hx-trigger="click"
+                hx-target="main"
+                hx-push-url="true"
+                hx-ext="preserve-params"
+                preserve-params="false"
+            >
+                <img src="/public/favicon.svg" />
+                <h1 class="text-xl md:text-3xl p-2 text-center md:text-left">
+                    Subclipper
+                </h1>
+            </div>
             <div
                 id="search"
                 class="w-full flex flex-1 flex-row justify-center p-2"
@@ -36,7 +47,7 @@
                         type="search"
                         placeholder="Search for a subtitle..."
                         value="{{ request.args.get('filter') or '' }}"
-                        hx-get
+                        hx-get="/"
                         hx-trigger="search, keyup delay:200ms changed"
                         hx-target="main"
                         hx-replace-url="true"
@@ -46,7 +57,24 @@
                     />
                 </label>
             </div>
-            <div class="flex w-full flex-1">
+            <div class="flex-1 flex flex-row justify-around px-4">
+                <div
+                    class="flex-auto flex justify-center"
+                    hx-get="/video_selection_dropdown"
+                    hx-trigger="load, refetch-current-path from:body"
+                    hx-ext="preserve-params"
+                    preserve-params="path"
+                >
+                    
+                </div>
+                <div
+                    class="flex-initial flex flex-row items-center"
+                    hx-ext="sse"
+                    sse-connect="/scanning_progress"
+                    sse-swap="progress"
+                >
+                    <div class="loading"></div>
+                </div>
             </div>
         </div>
     </header>
@@ -57,6 +85,7 @@
         hx-trigger="load"
         hx-include="[name='filter']"
     >
+        <div class="skeleton w-full h-full bg-base-200"></div>
     </main>
     <div id="modal-container">
         {% with sub_data=sub_data, url=None, errs=errs %}
@@ -64,7 +93,7 @@
         {% endwith %}
     </div>
     <footer class="flex-none w-full bg-base-200 text-base-content p-4 text-center md:text-left">
-        All rights to "{{ show_name }}" are reserved by their respective owners. Made using <a class="btn-link p-0" href="https://github.com/Niboor/subclipper">Subclipper</a>
+        The copyright of all media files presented here are reserved by their respective owners. Made using <a class="btn-link p-0" href="https://github.com/Niboor/subclipper">Subclipper</a>
     </footer>
     <div class="toast toast-start">
     </div>

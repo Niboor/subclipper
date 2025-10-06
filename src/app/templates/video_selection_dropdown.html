@@ -1,0 +1,19 @@
+<div class="dropdown">
+    <div
+        tabindex="0"
+        role="button"
+        class="btn"
+    >
+        Currently searching: {{ request.args.get('path') if request.args.get('path') != '.' else 'All Files' }}
+    </div>
+    <ul
+        tabindex="1"
+        class="w-full dropdown-content menu overflow-auto h-96 bg-base-100 rounded-box z-1 p-2 shadow-sm"
+        hx-get="/files"
+        hx-trigger="load"
+    >
+        <div class="skeleton bg-base-200 h-4 w-28"></div>
+        <div class="skeleton bg-base-200 h-4 w-full"></div>
+        <div class="skeleton bg-base-200 h-4 w-full"></div>
+    </ul>
+</div>
