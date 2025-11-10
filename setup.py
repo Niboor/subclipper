@@ -10,7 +10,7 @@ setup(
         "pillow>=11.1.0",
         "pysubs2>=1.8.0",
         "python-ffmpeg>=2.0.12",
-        "sub2clip @ git+https://github.com/lpalinckx/sub2clip.git@7b8efe2fa22cd3fc40dd2fbfab14fd733c705836"
+        "sub2clip @ git+https://github.com/lpalinckx/sub2clip.git@c1ead383bc9ffa5755c14633915fc559ed6a8740"
     ],
     extras_require={
         "dev": [
