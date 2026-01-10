@@ -2,6 +2,7 @@ from flask import Flask
 from logging.config import dictConfig
 from pathlib import Path
 import os
+from ..utils.id_encoding import encode_id
 
 from ..utils.config import Config
 
@@ -29,6 +30,7 @@ def create_app():
     })
     
     app = Flask(__name__)
+    app.jinja_env.globals.update(encode_id=encode_id)
     
     # Set up template and static directories
     app.template_folder = str(Path(__file__).parent / 'templates')

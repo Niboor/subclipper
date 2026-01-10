@@ -4,8 +4,11 @@
         <h2>Clip will appear here</h2>
     </div>
 {% else %}
+    <div class="absolute top-0 left-0 w-full h-full flex flex-col justify-center items-center z-0">
+        <div class="loading loading-bars"></div>
+    </div>
     <img
-        class="gif-image"
+        class="gif-image z-10"
         src="{{ url }}"
         alt="The clip is loading..."
     />

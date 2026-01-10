@@ -1,15 +1,20 @@
 import json
+import queue
+import threading
 from flask import Response, Blueprint, render_template, request, send_file, send_from_directory, make_response, jsonify, current_app, stream_with_context
 from pathlib import Path
 import logging
-from typing import Optional
+from typing import Generator, NamedTuple, Optional
 import urllib.parse
 import time
 import os
+from collections.abc import Callable
+from itertools import chain
 
 import flask
+from jinja2 import Template
 
-from ..core.models import ClipSettings
+from ..core.models import ClipSettings, VideoScanStatus, Video
 from ..utils.config import Config
 from ..core.video_processor import VideoProcessor
 
@@ -22,6 +27,24 @@ def cached_render_template(template, **context):
     rendered_template = render_template(template, **context)
     response = make_response(rendered_template)
     return response
+
+class SseEvent(NamedTuple):
+    event: str
+    data: str
+
+def sse_event_stream(cb: Generator[SseEvent, None, None]) -> Response:
+    def sse_events():
+        for event_data in cb:
+            yield f"event: { event_data.event }\n"
+            for line in event_data.data.splitlines():
+                yield f"data: {line}\n"
+            yield "\n"
+
+    return Response(
+        stream_with_context(sse_events()),
+        mimetype="text/event-stream",
+        headers={ 'Cache-Control': 'no-cache', 'Connection': 'keep-alive', "Transfer-Encoding": "chunked", }
+    )
 
 def create_clip_settings_from_request() -> ClipSettings:
     """Create ClipSettings from the current request's query parameters."""
@@ -111,32 +134,100 @@ def index():
 
         return resp
 
-@bp.route("/files")
-def videos():
-    root_path = config.subtitle_indexer.get_path('')
+@bp.route("/files", defaults={'path': '.'})
+@bp.route("/files/<path:path>")
+def videos(path: str):
+    full_path = config.subtitle_indexer.get_path(path)
+    root_path = config.subtitle_indexer.get_path('.')
+    progress = config.subtitle_indexer.get_scanning_progress(Path(path) if path != '.' else Path(''))
     return cached_render_template(
         'filesystem_list_item.html',
-        path=root_path,
-        root=root_path
+        full_path=full_path,
+        root_path=root_path,
+        progress=progress
     )
 
-@bp.route("/scanning_progress", defaults={'path': '.'})
-@bp.route("/scanning_progress/<path:path>")
-def scanning_progress(path: str):
+@bp.route("/scan_status/")
+def scan_status_root():
+    progress = config.subtitle_indexer.get_scanning_progress(Path('.'))
+    print(f"path: {Path('.')}, segments: {Path('.').parts}")
+    return cached_render_template(
+        'filesystem_dir_scan_status.html',
+        progress=progress
+    )
+@bp.route("/scan_status/<path:path>")
+def scan_status(path: str):
+    full_path = config.subtitle_indexer.get_path(path)
+    if full_path.is_file():
+        video = config.subtitle_indexer.get_video(path)
+        return cached_render_template(
+            'filesystem_video_scan_status.html',
+            video=video
+        )
+    else:
+        progress = config.subtitle_indexer.get_scanning_progress(Path(path))
+        return cached_render_template(
+            'filesystem_dir_scan_status.html',
+            progress=progress
+        )
 
+
+@bp.route("/scan_status_sse")
+def scan_status_sse():
     def sse_events():
-        for progress in config.subtitle_indexer.get_scanning_progress(config.subtitle_indexer.get_path(path)):
-            rendered_template = render_template("progress_scanning_status.html", progress=progress)
-            yield "event: progress\n"
-            for line in rendered_template.splitlines():
-                yield f"data: {line}\n"
-            yield "\n"
+        # Queue where events from either generator arrive.
+        event_queue: queue.Queue[Video | tuple[Path, float]] = queue.Queue()
 
-    return Response(
-        stream_with_context(sse_events()),
-        mimetype="text/event-stream",
-        headers={ 'Cache-Control': 'no-cache', 'Connection': 'keep-alive', "Transfer-Encoding": "chunked", }
-    )
+        def pump(gen):
+            for item in gen:
+                event_queue.put(item)
+        
+        # Start listening to BOTH generators concurrently.
+        threading.Thread(
+            target=pump,
+            args=(config.subtitle_indexer.on_videos_status_update(),),
+            daemon=True
+        ).start()
+
+        threading.Thread(
+            target=pump,
+            args=(config.subtitle_indexer.on_scanning_progress(),),
+            daemon=True
+        ).start()
+
+        # Now yield whichever event arrives first.
+        while True:
+            event = event_queue.get()
+
+            if isinstance(event, tuple):
+                (path, progress) = event
+
+                yield SseEvent(
+                    event=str(path),
+                    data=render_template(
+                        "filesystem_dir_scan_status.html",
+                        progress=progress,
+                    )
+                )
+
+            else:
+                video = event
+
+                yield SseEvent(
+                    event=video.id,
+                    data=render_template(
+                        "filesystem_video_scan_status.html",
+                        video=video,
+                    )
+                )
+
+    return sse_event_stream(sse_events())
+
+@bp.route("/scan", methods=[ 'POST' ], defaults={'path': '.'})
+@bp.route("/scan/<path:path>", methods=[ 'POST' ])
+def scan(path: str):
+    config.subtitle_indexer.scan(Path(path))
+    return "OK"
 
 @bp.route("/video_selection_dropdown")
 def current_path():

@@ -1,0 +1,14 @@
+<div class="flex flex-row items-center gap-1">
+{% if progress == 0 %}
+    <span class="loading loading-dots loading-xs"></span>
+    <span>Awaiting scan...</span>
+{% elif progress < 1 %}
+    <span class="loading loading-spinner loading-xs"></span>
+    <span>Scanning files... {{ (progress*100)|round(precision=2, method='common') }}%</span>
+{% elif progress >= 1 %}
+    <div class="scale-60">
+        {% include "icons/check-circle.html" %}
+    </div>
+    <span>Scanned</span>
+{% endif %}
+</div>

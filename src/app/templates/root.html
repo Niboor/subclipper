@@ -16,12 +16,21 @@
 <body
     hx-boost="true"
     hx-ext="response-targets, sse"
-    class="h-screen w-full flex flex-col"
+    hx-indicator="#generic-loading-message"
+    class="relative h-screen w-full flex flex-col"
 >
+    <div
+        id="generic-loading-message"
+        role="alert"
+        class="htmx-indicator transition-all duration-100 absolute -top-12 [.htmx-request]:top-2 left-1/2 -translate-x-1/2 alert flex flex-row gap-2 shadow-none [.htmx-request]:shadow-md z-10"
+    >
+        <div class="loading"></div>
+        <span>Loading...</span>
+    </div>
     <header class="flex-none">
-        <div class="navbar bg-base-100 shadow-sm flex flex-col md:flex-row !p-0">
+        <div class="navbar bg-base-100 shadow-sm flex flex-row !p-0">
             <div
-                class="flex-1 flex flex-row gap-2 px-4 cursor-pointer"
+                class="flex-initial md:flex-1 flex flex-row gap-2 md:px-4 cursor-pointer"
                 hx-get="/"
                 hx-trigger="click"
                 hx-target="main"
@@ -30,13 +39,13 @@
                 preserve-params="false"
             >
                 <img src="/public/favicon.svg" />
-                <h1 class="text-xl md:text-3xl p-2 text-center md:text-left">
+                <h1 class="text-xl hidden md:flex p-2 text-center md:text-left">
                     Subclipper
                 </h1>
             </div>
             <div
                 id="search"
-                class="w-full flex flex-1 flex-row justify-center p-2"
+                class="w-full flex flex-auto md:flex-1 flex-row justify-center p-2"
             >
                 <label class="input">
                     {% include "search_icon.html" %}
@@ -57,7 +66,7 @@
                     />
                 </label>
             </div>
-            <div class="flex-1 flex flex-row justify-around px-4">
+            <div class="flex-initial md:flex-1 flex flex-row justify-around md:px-4">
                 <div
                     class="flex-auto flex justify-center"
                     hx-get="/video_selection_dropdown"
@@ -67,14 +76,6 @@
                 >
                     
                 </div>
-                <div
-                    class="flex-initial flex flex-row items-center"
-                    hx-ext="sse"
-                    sse-connect="/scanning_progress"
-                    sse-swap="progress"
-                >
-                    <div class="loading"></div>
-                </div>
             </div>
         </div>
     </header>
@@ -83,7 +84,7 @@
         hx-ext="preserve-params"
         hx-get="/"
         hx-trigger="load"
-        hx-include="[name='filter']"
+        {# hx-include="[name='filter']" #}
     >
         <div class="skeleton w-full h-full bg-base-200"></div>
     </main>

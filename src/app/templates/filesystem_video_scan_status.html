@@ -1,0 +1,19 @@
+{% if video.status.value == 'SCANNED_SUCCESS' %}
+    <div class="text-success">{% include "icons/check-circle.html" %}</div>
+{% elif video.status.value == 'SCANNED_FAIL' %}
+    <div class="text-error">{% include "icons/x-circle.html" %}</div>
+    <span class="text-error italic">File scan failed: {{ video.fail_reason }}</span>
+    <button
+        class="btn btn-xs btn-error btn-soft btn-circle pointer-events-auto"
+        hx-post="/scan/{{ video.id }}"
+        hx-swap="none"
+    >
+        {% include "icons/arrow-path.html" %}
+    </button>
+{% elif video.status.value == 'SCANNING' %}
+    <span class="loading loading-spinner loading-xs"></span>
+    <span class="italic">Scanning subtitles in file...</span>
+{% elif video.status.value == 'UNSCANNED' %}
+    <span class="loading loading-ring loading-xs"></span>
+    <span class="italic">Awaiting file scan...</span>
+{% endif %}

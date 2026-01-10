@@ -1,12 +1,23 @@
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, TypeVar
+from enum import Enum
+
+class VideoScanStatus(Enum):
+    UNSCANNED = 'UNSCANNED'
+    SCANNING = 'SCANNING'
+    SCANNED_SUCCESS = 'SCANNED_SUCCESS'
+    SCANNED_FAIL = 'SCANNED_FAIL'
+
+    @classmethod
+    def _missing_(cls, value):
+        return cls.UNSCANNED
 
 @dataclass
 class Video:
-    title: str
-    path: Path
-    subs: List['Subtitle']
+    id: str
+    status: VideoScanStatus
+    fail_reason: Optional[str]
 
 @dataclass
 class Subtitle:
