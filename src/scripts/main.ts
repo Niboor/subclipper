@@ -63,9 +63,8 @@ async function main() {
   // HTMX uses history.pushState, which does not update CSS :target pseudoclass: https://developer.mozilla.org/en-US/docs/Web/CSS/:target#description
   // Fix taken and modified from https://github.com/bigskysoftware/htmx/issues/3447
   htmx.on(`htmx:afterSwap`, (event: Event & { detail: SwapOptions["eventInfo"] }) => {
-    const hashFragment = event.detail.pathInfo.requestPath.split(`#`).at(1)
+    const hashFragment = event.detail.pathInfo?.requestPath.split(`#`).at(1)
     if(hashFragment !== undefined && hashFragment !== ``) {
-      console.log(`updooting hash`)
       window.location.hash = hashFragment;
     }
   })

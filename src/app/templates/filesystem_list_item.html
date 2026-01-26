@@ -11,7 +11,7 @@
     hx-ext="sse"
     sse-connect="/scan_status_sse"
     {% endif %}
-    hx-indicator="none"
+    hx-indicator=""
 >
     {% if full_path.is_file() %}
     <div class="flex flex-row justify-between">
@@ -19,7 +19,7 @@
             {% include "icons/document.html" %}
             <a
                 class="{{ 'menu-active' if request.args.get('video') == relative_path else '' }}"
-                hx-get="/?path={{ relative_path }}"
+                hx-get="/{{ relative_path }}"
                 hx-target="main"
                 hx-push-url="true"
             >
@@ -51,7 +51,7 @@
                     <div class="tooltip tooltip-right" data-tip="Search in this directory">
                         <button
                             class="btn btn-sm btn-circle btn-ghost p-0"
-                            hx-get="/?path={{ relative_path }}"
+                            hx-get="/{{ relative_path }}"
                             hx-target="main"
                             hx-push-url="true"
                             hx-ext="preserve-params"

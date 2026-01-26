@@ -86,3 +86,5 @@ dist-ssr
 # SQLite
 **/*.sqlite
 **/*.sqlite-journal
+**/*.db
+**/*.db-journal

@@ -82,14 +82,14 @@
     <main
         class="flex-1 min-h-0 md:p-8"
         hx-ext="preserve-params"
-        hx-get="/"
+        hx-get="/{{ path }}"
         hx-trigger="load"
         {# hx-include="[name='filter']" #}
     >
         <div class="skeleton w-full h-full bg-base-200"></div>
     </main>
     <div id="modal-container">
-        {% with sub_data=sub_data, url=None, errs=errs %}
+        {% with sub_data=sub_data, errs=errs %}
             {% include "tweak_modal.html" %}
         {% endwith %}
     </div>

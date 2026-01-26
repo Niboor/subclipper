@@ -97,16 +97,16 @@ def get_public(path):
 #         oob=hx_request is not None
 #     )
 
-@bp.route("/")
-def index():
-    path = request.args.get("path", None, type=str)
+@bp.route("/", defaults={'path': '.'})
+@bp.route("/<path:path>")
+def index(path: str):
     filter = request.args.get("filter", '', type=str)
     selected = request.args.get("selected", None, type=str)
-    page = request.args.get("page", 0, type=int)
+    page = request.args.get("page", None, type=int)
     page_length = request.args.get("page_length", config.default_page_length, type=int)
 
     hx_request = request.headers.get("HX-Request")
-    if path is None and filter == '':
+    if path == "." and filter == '' and page is None:
         template = "root.html" if hx_request is None else "index.html"
         return cached_render_template(
             template,
@@ -115,6 +115,7 @@ def index():
             errs=None,
         )
     else:
+        page = page or 0
         subs = config.subtitle_indexer.search_subtitles((path if path != '/' else '') or '', filter)
         sub_pages = [subs[x:x+page_length] for x in range(0, len(subs), page_length)]
         subs_from_page = sub_pages[page] if sub_pages and sub_pages[page] else []
@@ -122,8 +123,8 @@ def index():
         template = "root.html" if hx_request is None else "subtitles.html"
         resp = cached_render_template(
             template,
+            path=path,
             sub_data=None,
-            url=None,
             errs=None,
 
             subs=subs_from_page,
@@ -150,7 +151,6 @@ def videos(path: str):
 @bp.route("/scan_status/")
 def scan_status_root():
     progress = config.subtitle_indexer.get_scanning_progress(Path('.'))
-    print(f"path: {Path('.')}, segments: {Path('.').parts}")
     return cached_render_template(
         'filesystem_dir_scan_status.html',
         progress=progress
@@ -251,7 +251,7 @@ def locate(subtitle_id: str):
         return f"no subtitle with id {subtitle_id} found", 404
     
     resp = flask.Response("OK")
-    fragment_path = f"/?path=.&page={sub_page[0]}&page_length={page_length}#id{subtitle_id}"
+    fragment_path = f"/?page={sub_page[0]}&page_length={page_length}#id{subtitle_id}"
     resp.headers['HX-Location'] = json.dumps({"path": fragment_path, "target": "main"})
     resp.status_code = 200
 
