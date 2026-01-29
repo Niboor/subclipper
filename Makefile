@@ -52,7 +52,7 @@ run: yarn
 	FLASK_ENV=development \
 	SEARCH_PATH="$(SEARCH_PATH)" \
 	# $(PYTHON) -m flask run --debug
-	gunicorn "src.app:create_app()" -w 1 --threads 10 -b 127.0.0.1:5000
+	gunicorn "src.app:create_app()" -w 1 --threads 10 -b 127.0.0.1:5000 --worker-class gthread --workers 1
 
 # Docker targets
 docker-build:

@@ -1,4 +1,5 @@
 export * from "./components/dual-handle-slider";
+export * from "./components/closable-dialog"
 import { SwapOptions } from "htmx.org";
 import "./main.css"
 

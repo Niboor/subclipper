@@ -160,10 +160,13 @@ def scan_status(path: str):
     full_path = config.subtitle_indexer.get_path(path)
     if full_path.is_file():
         video = config.subtitle_indexer.get_video(path)
-        return cached_render_template(
-            'filesystem_video_scan_status.html',
-            video=video
-        )
+        if video is None:
+            return f"Not found: video on path {path}", 404
+        else:
+            return cached_render_template(
+                'filesystem_video_scan_status.html',
+                video=video
+            )
     else:
         progress = config.subtitle_indexer.get_scanning_progress(Path(path))
         return cached_render_template(
@@ -197,29 +200,49 @@ def scan_status_sse():
 
         # Now yield whichever event arrives first.
         while True:
-            event = event_queue.get()
+            try:
+                event = event_queue.get(timeout=10)
+                
+                if isinstance(event, tuple):
+                    (path, progress) = event
 
-            if isinstance(event, tuple):
-                (path, progress) = event
-
-                yield SseEvent(
-                    event=str(path),
-                    data=render_template(
-                        "filesystem_dir_scan_status.html",
-                        progress=progress,
+                    yield SseEvent(
+                        event=str(path),
+                        data=render_template(
+                            "filesystem_dir_scan_status.html",
+                            progress=progress,
+                        )
                     )
-                )
 
-            else:
-                video = event
+                else:
+                    video = event
 
-                yield SseEvent(
-                    event=video.id,
-                    data=render_template(
-                        "filesystem_video_scan_status.html",
-                        video=video,
+                    yield SseEvent(
+                        event=video.id,
+                        data=render_template(
+                            "filesystem_video_scan_status.html",
+                            video=video,
+                        )
                     )
+            except queue.Empty:
+                yield SseEvent(event="ping", data="")
+                continue
+
+
+    return sse_event_stream(sse_events())
+
+@bp.route("/video_status_sse")
+def video_status_sse():
+
+    def sse_events():
+        for video in config.subtitle_indexer.on_videos_status_update():
+            yield SseEvent(
+                event=str(video.id),
+                data=render_template(
+                    "filesystem_video_scan_status.html",
+                    video=video,
                 )
+            )
 
     return sse_event_stream(sse_events())
 

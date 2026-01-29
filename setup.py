@@ -11,7 +11,8 @@ setup(
         "pysubs2>=1.8.0",
         "python-ffmpeg>=2.0.12",
         "gunicorn>=23.0.0",
-        "sub2clip @ git+https://github.com/lpalinckx/sub2clip.git@c1ead383bc9ffa5755c14633915fc559ed6a8740"
+        "sub2clip @ git+https://github.com/lpalinckx/sub2clip.git@c1ead383bc9ffa5755c14633915fc559ed6a8740",
+        "gevent>=25.9.1"
     ],
     extras_require={
         "dev": [
