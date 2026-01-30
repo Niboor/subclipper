@@ -88,3 +88,4 @@ dist-ssr
 **/*.sqlite-journal
 **/*.db
 **/*.db-journal
+**/*.db.wal
