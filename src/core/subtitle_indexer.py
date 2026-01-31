@@ -75,7 +75,6 @@ class SubtitleDatabase(pykka.ThreadingActor):
         return subs
     
     def find_subtitle(self, subtitle_id: str) -> Optional[Subtitle]:
-        print("find subtitle with id ", subtitle_id)
         cursor = self.conn.cursor()
         cursor.execute("SELECT * FROM subtitles WHERE subtitle_id = ?", [subtitle_id])
         try:
@@ -187,7 +186,7 @@ class SubtitleScanner(pykka.ThreadingActor):
         logger.info("Scan complete")
 
     def _update_video_status(self, video_id: str, status: VideoScanStatus, fail_reason: str | None = None):
-        logger.info(f"updating video status of {video_id} to {status} (errors: {fail_reason})")
+        logger.debug(f"updating video status of {video_id} to {status} (errors: {fail_reason})")
 
         video = Video(video_id, status, fail_reason)
 

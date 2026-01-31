@@ -71,32 +71,6 @@ def get_public(path):
     """Serve static files from the static directory."""
     return send_from_directory("static", path)
 
-# @bp.route("/")
-# def index():
-#     search = request.args.get("q") or ''
-#     video_id = request.args.get("video", None, type=int)
-#     page = request.args.get("page", 0, type=int)
-#     page_length = request.args.get("page_length", config.default_page_length, type=int)
-#     highlight = request.args.get("highlight", None, type=str)
-
-#     subs = config.video_processor.search_subtitles('', search)
-#     sub_pages = [subs[x:x+page_length] for x in range(0, len(subs), page_length)]
-#     subs_from_page = sub_pages[page] if sub_pages else []
-
-#     hx_request = request.headers.get("HX-Request")
-#     template = "root.html" if hx_request is None else "subtitles.html"
-
-#     return cached_render_template(
-#         template,
-#         videos=[],
-#         subs=subs_from_page,
-#         page_length=page_length,
-#         pages=sub_pages,
-#         sub_data=None,
-#         url=None,
-#         oob=hx_request is not None
-#     )
-
 @bp.route("/", defaults={'path': '.'})
 @bp.route("/<path:path>")
 def index(path: str):

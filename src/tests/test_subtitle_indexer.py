@@ -50,7 +50,6 @@ def test_find_subtitle(subtitle_indexer):
 def test_search_subtitles_from_root(subtitle_indexer):
     
     for path in [".", "subfolder"]:
-        subtitles = subtitle_indexer.search_subtitles(".", "initializing")
-        print(subtitles)
+        subtitles = subtitle_indexer.search_subtitles(path, "initializing")
         assert len(subtitles) > 0
         assert len([subtitle for subtitle in subtitles if subtitle.text == "Initializing test sequence alpha."]) > 0
