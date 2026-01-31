@@ -68,7 +68,7 @@ The application also has the following optional environment variables:
 These are automatically set when using `make run`, but you can override them:
 
 ```bash
-SEARCH_PATH=/path/to/videos make run
+SEARCH_PATH=/path/to/videos DB_PATH="subclipper.db" make run
 ```
 
 ## Development

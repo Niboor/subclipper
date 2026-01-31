@@ -7,9 +7,6 @@ import { createRef, ref, Ref } from 'lit/directives/ref.js';
 export class ClosableDialog extends LitElement {
   static styles = [unsafeCSS(styles)]
 
-  // @property({ type: String })
-  // public id: string
-
   rootRef: Ref<HTMLDialogElement> = createRef()
 
   @property({ type: Boolean })

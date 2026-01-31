@@ -16,7 +16,6 @@ from jinja2 import Template
 
 from ..core.models import ClipSettings, VideoScanStatus, Video
 from ..utils.config import Config
-from ..core.video_processor import VideoProcessor
 
 logger = logging.getLogger(__name__)
 bp = Blueprint('main', __name__)
