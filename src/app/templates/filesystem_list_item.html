@@ -14,14 +14,17 @@
     hx-indicator=""
 >
     {% if full_path.is_file() %}
-    <div class="flex flex-row justify-between">
+    <div
+        class="flex flex-row justify-between"
+        hx-get="/{{ relative_path }}"
+        hx-target="main"
+        hx-push-url="true"
+        hx-trigger="click"
+    >
         <div class="flex flex-row gap-2">
             {% include "icons/document.html" %}
             <a
                 class="{{ 'menu-active' if request.args.get('video') == relative_path else '' }}"
-                hx-get="/{{ relative_path }}"
-                hx-target="main"
-                hx-push-url="true"
             >
                 {{ relative_path.name }}
             </a>
@@ -29,12 +32,14 @@
         <div
             class="flex flex-row items-center gap-2"
             sse-swap="{{ relative_path }}"
+            hx-push-url="false"
             hx-get="/scan_status/{{ relative_path }}"
             {% if open_by_default or is_root_child %}
             hx-trigger="load"
             {% else %}
             hx-trigger="click once from:#id-{{ encode_id(relative_path.parent.__str__()) }}"
             {% endif %}
+            hx-target="this"
         >
             <span class="skeleton skeleton-text italic">Getting scan status...</span>
         </div>
