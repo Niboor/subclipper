@@ -15,12 +15,12 @@ setup(
         "gevent>=25.9.1",
         "duckdb>=1.4.4",
         "pykka>=4.4.1",
-        "pytest-timeout>=2.4.0"
     ],
     extras_require={
         "dev": [
             "pytest>=7.0.0",
             "pytest-cov>=4.0.0",
+            "pytest-timeout>=2.4.0",
         ]
     },
     entry_points={

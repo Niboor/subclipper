@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 class Config:
     def __init__(self):
         self.search_path = Path(self._get_required_env('SEARCH_PATH'))
-        self.db_path = self._get_optional_env('DB_PATH', 'file::memory:')
+        self.db_path = self._get_optional_env('DB_PATH', '')
         self.default_page_length = int(self._get_optional_env('DEFAULT_PAGE_LENGTH', '50'))
         self.font_path = self._find_font()
         self.single_show = self._get_optional_env('SINGLE_SHOW', '') != ''

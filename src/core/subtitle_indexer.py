@@ -1,11 +1,8 @@
 import logging
 from pathlib import Path
-import threading
 from typing import Any, Generator, List, Optional
-from threading import Thread, Lock
 from queue import Queue
 from ..utils.id_encoding import encode_id
-import time
 import os
 import duckdb
 import pykka
