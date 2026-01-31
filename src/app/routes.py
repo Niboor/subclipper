@@ -79,7 +79,7 @@ def index(path: str):
     page_length = request.args.get("page_length", config.default_page_length, type=int)
 
     hx_request = request.headers.get("HX-Request")
-    if path == "." and filter == '' and page is None:
+    if not config.single_show and path == "." and filter == '' and page is None:
         template = "root.html" if hx_request is None else "index.html"
         return cached_render_template(
             template,

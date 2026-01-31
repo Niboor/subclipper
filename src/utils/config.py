@@ -13,6 +13,7 @@ class Config:
         self.db_path = self._get_optional_env('DB_PATH', 'file::memory:')
         self.default_page_length = int(self._get_optional_env('DEFAULT_PAGE_LENGTH', '50'))
         self.font_path = self._find_font()
+        self.single_show = self._get_optional_env('SINGLE_SHOW', '') != ''
         logger.info(f"Initialized Config with search_path: {self.search_path}, db_path: {self.db_path}, font_path: {self.font_path}")
         self._video_processor = None
         self.subtitle_indexer = SubtitleIndexer(self.search_path, self.db_path)
