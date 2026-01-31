@@ -1,32 +1,30 @@
 import pytest
 from pathlib import Path
-from core.models import Video, Subtitle, ClipSettings
+from src.core.models import Video, Subtitle, ClipSettings, VideoScanStatus
 
 def test_video_creation():
     video = Video(
-        id=1,
-        title="test_video",
-        path=Path("/path/to/video.mp4"),
-        subs=[]
+        id="/path/to/video",
+        status=VideoScanStatus.SCANNED_SUCCESS,
+        fail_reason=None
     )
-    assert video.id == 1
-    assert video.title == "test_video"
-    assert video.path == Path("/path/to/video.mp4")
-    assert video.subs == []
+    assert video.id == "/path/to/video"
+    assert video.status == VideoScanStatus.SCANNED_SUCCESS
+    assert video.fail_reason == None
 
 def test_subtitle_creation():
     sub = Subtitle(
-        id=1,
+        id="base64_encoded(/path/to/video/0)",
         start=10.0,
         end=15.0,
         text="Test subtitle",
-        video_id=1
+        video_id="/path/to/video"
     )
-    assert sub.id == 1
+    assert sub.id == "base64_encoded(/path/to/video/0)"
     assert sub.start == 10.0
     assert sub.end == 15.0
     assert sub.text == "Test subtitle"
-    assert sub.video_id == 1
+    assert sub.video_id == "/path/to/video"
 
 def test_clip_settings_validation():
     settings = ClipSettings(
@@ -37,8 +35,8 @@ def test_clip_settings_validation():
         text="Test",
         crop=False,
         resolution=500,
-        id=0,
-        episode=0,
+        video_id="/path/to/video",
+        subtitle_id="base64_encoded(/path/to/video/0)",
         font_size=20,
         caption="",
         boomerang=False,
@@ -58,8 +56,8 @@ def test_clip_settings_validation_errors():
         text="Test",
         crop=False,
         resolution=500,
-        id=0,
-        episode=0,
+        video_id="/path/to/video",
+        subtitle_id="base64_encoded(/path/to/video/0)",
         font_size=20,
         caption="",
         boomerang=False,
@@ -80,11 +78,10 @@ def test_clip_settings_validation_errors():
 
     # Test invalid episode ID
     settings.resolution = 500
-    settings.episode = -1
-    assert "episode" in settings.validate()
+    settings.video_id = ""
+    assert "video_id" in settings.validate()
 
     # Test text too long
-    settings.episode = 0
     settings.text = "a" * 201
     assert "text" in settings.validate()
 

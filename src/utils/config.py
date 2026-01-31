@@ -10,12 +10,12 @@ logger = logging.getLogger(__name__)
 class Config:
     def __init__(self):
         self.search_path = Path(self._get_required_env('SEARCH_PATH'))
-        self.sqlite_path = self._get_optional_env('SQLITE_PATH', 'file::memory:')
+        self.db_path = self._get_optional_env('DB_PATH', 'file::memory:')
         self.default_page_length = int(self._get_optional_env('DEFAULT_PAGE_LENGTH', '50'))
         self.font_path = self._find_font()
-        logger.info(f"Initialized Config with search_path: {self.search_path}, sqlite_path: {self.sqlite_path}, font_path: {self.font_path}")
+        logger.info(f"Initialized Config with search_path: {self.search_path}, db_path: {self.db_path}, font_path: {self.font_path}")
         self._video_processor = None
-        self.subtitle_indexer = SubtitleIndexer(self.search_path, self.sqlite_path)
+        self.subtitle_indexer = SubtitleIndexer(self.search_path, self.db_path)
         
     def _get_required_env(self, name: str) -> str:
         """Get a required environment variable. If it is not present, the program will panic."""

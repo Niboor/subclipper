@@ -44,7 +44,7 @@ yarn:
 # Development targets
 test:
 	@echo "Running tests..."
-	$(PYTHON) -m pytest src/tests/ -v
+	$(PYTHON) -m pytest src/tests/ -v --log-cli-level=INFO -s
 
 run: yarn
 	@echo "Starting development server..."

@@ -19,6 +19,9 @@ class Video:
     status: VideoScanStatus
     fail_reason: Optional[str]
 
+    def already_scanned(self) -> bool:
+        return self.status == VideoScanStatus.SCANNED_SUCCESS or self.status == VideoScanStatus.SCANNED_FAIL
+
 @dataclass
 class Subtitle:
     id: str
@@ -56,7 +59,7 @@ class ClipSettings:
         if self.resolution < 50 or self.resolution > 1024:
             errs['resolution'] = 'resolution must be between 50 and 1024'
         if self.video_id == '':
-            errs['video'] = 'invalid video id'
+            errs['video_id'] = 'invalid video id'
         if len(self.text) > 200:
             errs['text'] = 'subtitle text too large'
         if len(self.caption) > 200:

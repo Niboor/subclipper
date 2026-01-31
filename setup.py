@@ -14,7 +14,8 @@ setup(
         "sub2clip @ git+https://github.com/lpalinckx/sub2clip.git@c1ead383bc9ffa5755c14633915fc559ed6a8740",
         "gevent>=25.9.1",
         "duckdb>=1.4.4",
-        "pykka>=4.4.1"
+        "pykka>=4.4.1",
+        "pytest-timeout>=2.4.0"
     ],
     extras_require={
         "dev": [

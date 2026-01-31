@@ -68,13 +68,14 @@ class SubtitleDatabase(pykka.ThreadingActor):
     
     def search_subtitles(self, search_subpath: str, search_string: str) -> List[Subtitle]:
         cursor = self.conn.cursor()
-        cursor.execute("SELECT * FROM subtitles WHERE video_id LIKE ? AND text LIKE ?", [f"{search_subpath if search_subpath != '.' else ''}%", f"%{search_string}%"])
+        cursor.execute("SELECT * FROM subtitles WHERE video_id LIKE ? AND text ILIKE ?", [f"{search_subpath if search_subpath != '.' else ''}%", f"%{search_string}%"])
         rows = cursor.fetchall()
         subs = [Subtitle(id=subtitle_id, video_id=video_id, text=text, start=start, end=end) for (subtitle_id, video_id, text, start, end) in rows]
         cursor.close()
         return subs
     
     def find_subtitle(self, subtitle_id: str) -> Optional[Subtitle]:
+        print("find subtitle with id ", subtitle_id)
         cursor = self.conn.cursor()
         cursor.execute("SELECT * FROM subtitles WHERE subtitle_id = ?", [subtitle_id])
         try:
@@ -127,12 +128,23 @@ class SubtitleDatabase(pykka.ThreadingActor):
         self.conn.commit()
         cursor.close()
 
+    def insert_subtitles(self, subtitles: List[Subtitle]):
+        cursor = self.conn.cursor()
+        cursor.begin()
+        for subtitle in subtitles:
+            cursor.execute('''INSERT OR REPLACE INTO subtitles (subtitle_id, video_id, text, start_seconds, end_seconds) VALUES (?,?,?,?,?)''', [subtitle.id, subtitle.video_id, subtitle.text, subtitle.start, subtitle.end])
+        cursor.commit()
+        self.conn.commit()
+        cursor.close()
+
 
 class SubtitleScanner(pykka.ThreadingActor):
     def __init__(self, root_path: Path, scan_path: Path, db: pykka.ActorProxy[SubtitleDatabase], progress_listener: Queue[tuple[Path, float]], video_update_listener: Queue[Video]):
         super().__init__()
 
+        # The absolute path to the root of the file system where all the video files are stored
         self.root_path = root_path
+        # The relative path within the root path where you want to scan all files in
         self.scan_path = scan_path
         self.db = db
 
@@ -140,40 +152,38 @@ class SubtitleScanner(pykka.ThreadingActor):
         self._video_update_listener = video_update_listener
 
     def on_start(self) -> None:
+        # the full absolute path to the scan path
         full_path = self.root_path.joinpath(self.scan_path)
         logger.info(f"Started the scanning of all subtitles in {full_path.__str__()}")
-        files: List[tuple[Path, bool]] = []
-        for root, dirs, f in os.walk(full_path):
+
+        videos: List[Video] = []
+        for root, _, f in os.walk(full_path):
+            # The directory in which the file is currently located at, relative to the root path from which all files come from
+            current_dir = Path(root).relative_to(self.root_path)
             for file in f:
-                filepath = Path(root).joinpath(file)
-                logger.info(f"Checking scan status of {filepath}")
-                video_id = filepath.relative_to(self.root_path).__str__()
+                video_id = current_dir.joinpath(file).__str__()
+                logger.info(f"Checking scan status of {video_id}")
                 video: Optional[Video] = self.db.get_video(video_id).get()
                 if video is None:
                     self._update_video_status(video_id, VideoScanStatus.UNSCANNED)
-                    files.append((filepath, False))
+                    videos.append(Video(video_id, VideoScanStatus.UNSCANNED, None))
                 else:
-                    already_scanned = video.status == 'SCANNED_SUCCESS' or video.status == 'SCANNED_FAIL'
-                    files.append((filepath, already_scanned))
-        scanned_files = [(file, scanned) for (file, scanned) in files if scanned]
-        logger.info(f"Found {len(files)} files, {len(scanned_files)} already scanned")
-        for i, (file, already_scanned) in enumerate(files):
-            video_id = file.relative_to(self.root_path).__str__()
+                    videos.append(video)
+        scanned_videos = [video for video in videos if video.already_scanned()]
+        logger.info(f"Found {len(videos)} files, {len(scanned_videos)} already scanned")
+        for i, video in enumerate(videos):
             try:
-                if already_scanned:
-                    logger.info(f"{i+1}/{len(files)}: Skipping file {file} as it is already present in the cache")
+                if video.already_scanned():
+                    logger.info(f"{i+1}/{len(videos)}: Skipping file {video.id} as it is already present in the cache")
                 else:
-                    logger.info(f"{i+1}/{len(files)}: Scanning file {file}")
-                    self._update_video_status(video_id, VideoScanStatus.SCANNING)
-                    subtitles = self._extract_subtitles(file)
-                    for subtitle in subtitles:
-                        self._insert_subtitle(subtitle)
-                    self._update_video_status(video_id, VideoScanStatus.SCANNED_SUCCESS)
+                    logger.info(f"{i+1}/{len(videos)}: Scanning file {video.id}")
+                    self._update_video_status(video.id, VideoScanStatus.SCANNING)
+                    subtitles = self._extract_subtitles(Path(video.id))
+                    self.db.insert_subtitles(subtitles)
+                    self._update_video_status(video.id, VideoScanStatus.SCANNED_SUCCESS)
             except Exception as e:
                 logger.exception(e)
-                self._update_video_status(video_id, VideoScanStatus.SCANNED_FAIL, e.__str__())
-            finally:
-                self.progress = (i+1) / len(files)
+                self._update_video_status(video.id, VideoScanStatus.SCANNED_FAIL, e.__str__())
         logger.info("Scan complete")
 
     def _update_video_status(self, video_id: str, status: VideoScanStatus, fail_reason: str | None = None):
@@ -185,18 +195,18 @@ class SubtitleScanner(pykka.ThreadingActor):
         self._video_update_listener.put(video)
 
         video_path = Path(video_id)
-        segments = video_path.parts
-        for i, _ in enumerate(segments[:-1]):
+        segments = [Path(""), *video_path.parts[:-1]]
+        for i, _ in enumerate(segments):
             partial_path = Path(*segments[0:i+1])
             percent = self._get_progress(partial_path)
             self._progress_listener.put((partial_path, percent))
 
-    def _extract_subtitles(self, video_path: Path) -> List[Subtitle]:
+    def _extract_subtitles(self, video_id: Path) -> List[Subtitle]:
         """Extract subtitles from a video file."""
-        video_id = video_path.relative_to(self.root_path).__str__()
+        absolute_video_path = self.root_path.joinpath(video_id).__str__()
         try:
             logger.debug(f"Extracting subtitles from {video_id}")
-            ssa_events, ok = extract_subs(str(video_path))
+            ssa_events, ok = extract_subs(absolute_video_path)
             if ok:
                 return [
                     Subtitle(
@@ -204,13 +214,13 @@ class SubtitleScanner(pykka.ThreadingActor):
                         start=event.start / 1000,  # Convert to seconds
                         end=event.end / 1000,
                         text=event.text,
-                        video_id=video_id
+                        video_id=video_id.__str__()
                     )
                     for idx, event in enumerate(ssa_events) if not isinstance(event, str)
                 ]
             raise Exception(ssa_events)
         except Exception as e:
-            logger.exception(f"Failed to extract subtitles from {video_path}")
+            logger.exception(f"Failed to extract subtitles from {absolute_video_path}")
             raise
 
     def _get_progress(self, path: Path) -> float:
@@ -218,19 +228,17 @@ class SubtitleScanner(pykka.ThreadingActor):
         scanned_videos = [video for video in videos if video.status == VideoScanStatus.SCANNED_SUCCESS or video.status == VideoScanStatus.SCANNED_FAIL]
         percent = len(scanned_videos) / len(videos) if len(videos) != 0 else 0
         return percent
-    
-    def _insert_subtitle(self, subtitle: Subtitle):
-        self.db.insert_subtitle(subtitle)
 
 class SubtitleIndexer():
     def __init__(self, root_path: Path, db_path: str):
         self.root_path = root_path
-        self.db: pykka.ActorProxy[SubtitleDatabase] = SubtitleDatabase.start(db_path).proxy()
+        self._db: pykka.ActorRef[SubtitleDatabase] = SubtitleDatabase.start(db_path)
+        self.db: pykka.ActorProxy[SubtitleDatabase] = self._db.proxy()
 
         self.progress_listener: Queue[tuple[Path, float]] = Queue()
         self.video_update_listener: Queue[Video] = Queue()
 
-        SubtitleScanner.start(self.root_path, Path("."), self.db, self.progress_listener, self.video_update_listener)
+        self._subtitle_scanner = SubtitleScanner.start(self.root_path, Path("."), self.db, self.progress_listener, self.video_update_listener)
 
     def get_scanning_progress(self, search_subpath: Path) -> Optional[float]:
         videos: List[Video] = self.db.get_videos(search_subpath).get()
@@ -261,3 +269,7 @@ class SubtitleIndexer():
         
     def scan(self, path: Path):
         raise Exception("not implemented")
+    
+    def stop(self):
+        self._db.stop()
+        self._subtitle_scanner.stop()
