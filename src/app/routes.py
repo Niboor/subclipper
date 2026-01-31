@@ -178,7 +178,7 @@ def scan_status_sse():
                 
                 if isinstance(event, tuple):
                     (path, progress) = event
-                    logger.info(f"path {path} progress changed to {progress}. Sending over SSE stream now")
+                    logger.debug(f"path {path} progress changed to {progress}. Sending over SSE stream now")
 
                     yield SseEvent(
                         event=str(path),
@@ -190,7 +190,7 @@ def scan_status_sse():
 
                 else:
                     video = event
-                    logger.info(f"path {video.id} status changed to {video.status}. Sending over SSE stream now")
+                    logger.debug(f"path {video.id} status changed to {video.status}. Sending over SSE stream now")
 
                     yield SseEvent(
                         event=video.id,
