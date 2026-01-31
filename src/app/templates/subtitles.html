@@ -18,7 +18,7 @@
                         class="list-row hover:bg-base-200 cursor-pointer transition-colors target:bg-primary target:hover:bg-primary/50 items-center"
                         hx-get="/sub_form/{{ sub['id'] }}"
                         hx-target="#modal-container"
-                        hx-ext="preserve-params"
+                        preserve-params="false"
                     >
                         <div class="list-col-grow flex flex-col items-start">
                             <div class="flex flex-row gap-2">

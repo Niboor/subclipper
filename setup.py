@@ -28,4 +28,4 @@ setup(
             "subclipper=src.__main__:main",
         ],
     },
-) 
+)
