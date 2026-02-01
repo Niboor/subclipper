@@ -31,6 +31,7 @@ class SseEvent(NamedTuple):
     event: str
     data: str
 
+# Items produced by the given generator are streamed over an SSE connection
 def sse_event_stream(cb: Generator[SseEvent, None, None]) -> Response:
     def sse_events():
         for event_data in cb:
@@ -69,44 +70,6 @@ def create_clip_settings_from_request() -> ClipSettings:
 def get_public(path):
     """Serve static files from the static directory."""
     return send_from_directory("static", path)
-
-@bp.route("/", defaults={'path': '.'})
-@bp.route("/<path:path>")
-def index(path: str):
-    filter = request.args.get("filter", '', type=str)
-    selected = request.args.get("selected", None, type=str)
-    page = request.args.get("page", None, type=int)
-    page_length = request.args.get("page_length", config.default_page_length, type=int)
-
-    hx_request = request.headers.get("HX-Request")
-    if not config.single_show and path == "." and filter == '' and page is None:
-        template = "root.html" if hx_request is None else "index.html"
-        return cached_render_template(
-            template,
-            sub_data=None,
-            url=None,
-            errs=None,
-        )
-    else:
-        page = page or 0
-        subs = config.subtitle_indexer.search_subtitles((path if path != '/' else '') or '', filter)
-        sub_pages = [subs[x:x+page_length] for x in range(0, len(subs), page_length)]
-        subs_from_page = sub_pages[page] if sub_pages and sub_pages[page] else []
-
-        template = "root.html" if hx_request is None else "subtitles.html"
-        resp = cached_render_template(
-            template,
-            path=path,
-            sub_data=None,
-            errs=None,
-
-            subs=subs_from_page,
-            page_length=page_length,
-            pages=sub_pages,
-        )
-        resp.headers['HX-Trigger-After-Settle'] = 'refetch-current-path'
-
-        return resp
 
 @bp.route("/files", defaults={'path': '.'})
 @bp.route("/files/<path:path>")
@@ -227,21 +190,19 @@ def scan(path: str):
     config.subtitle_indexer.scan(Path(path))
     return "OK"
 
-@bp.route("/video_selection_dropdown")
-def current_path():
-    path = request.args.get("path", None, type=str)
-
-    if path is None:
-        return ""
-    else:
-        return cached_render_template(
-            'video_selection_dropdown.html',
-        )
+@bp.route("/video_selection_dropdown", defaults={'path': '.'})
+@bp.route("/video_selection_dropdown/", defaults={'path': '.'})
+@bp.route("/video_selection_dropdown/<path:path>")
+def current_path(path):
+    return cached_render_template(
+        'video_selection_dropdown.html',
+        path=path
+    )
 
 @bp.route("/locate/<subtitle_id>")
 def locate(subtitle_id: str):
     page_length = request.args.get("page_length", config.default_page_length, type=int)
-    subs = config.subtitle_indexer.search_subtitles('', '')
+    subs = config.subtitle_indexer.search_subtitles('', '', 0, None)
     sub_pages = [subs[x:x+page_length] for x in range(0, len(subs), page_length)]
     sub_page = [i for i, page in enumerate(sub_pages) if len([sub for sub in page if sub.id == subtitle_id]) > 0] if sub_pages else []
 
@@ -280,7 +241,7 @@ def get_sub(subtitle_id: str):
 
     hx_request = request.headers.get("HX-Request")
     if hx_request is None:
-        return cached_render_template("root.html", sub_data=sub_data, videos=[])
+        return cached_render_template("root.html", sub_data=sub_data, videos=[], single_show_name=config.single_show_name)
     else:
         return cached_render_template("tweak_modal.html", sub_data=sub_data)
 
@@ -319,3 +280,43 @@ def get_gif():
                 tmp_dir.rmdir()
             except Exception as e:
                 logger.warning(f"Failed to clean up temporary files: {e}")
+
+@bp.route("/", defaults={'path': '.'})
+@bp.route("/<path:path>")
+def index(path: str):
+    filter = request.args.get("filter", '', type=str)
+    selected = request.args.get("selected", None, type=str)
+    page = request.args.get("page", None, type=int)
+    page_length = request.args.get("page_length", config.default_page_length, type=int)
+
+    hx_request = request.headers.get("HX-Request")
+    if config.single_show_name is None and path == "." and filter == '' and page is None:
+        template = "root.html" if hx_request is None else "index.html"
+        return cached_render_template(
+            template,
+            sub_data=None,
+            url=None,
+            errs=None,
+            single_show_name=config.single_show_name,
+        )
+    else:
+        page = page or 0
+        search_subpath = (path if path != '/' else '') or ''
+        pages = config.subtitle_indexer.get_subtitle_pages(search_subpath, filter, page_length)
+        subs = config.subtitle_indexer.search_subtitles(search_subpath, filter, page, page_length)
+
+        template = "root.html" if hx_request is None else "subtitles.html"
+        resp = cached_render_template(
+            template,
+            path=path,
+            sub_data=None,
+            errs=None,
+            single_show_name=config.single_show_name,
+
+            subs=subs,
+            page_length=page_length,
+            pages=pages,
+        )
+        resp.headers['HX-Trigger-After-Settle'] = 'refetch-current-path'
+
+        return resp

@@ -6,6 +6,7 @@ from ..utils.id_encoding import encode_id
 import os
 import duckdb
 import pykka
+import math
 
 from subs.subs import (extract_subs)
 
@@ -63,9 +64,22 @@ class SubtitleDatabase(pykka.ThreadingActor):
 
         return super().on_stop()
     
-    def search_subtitles(self, search_subpath: str, search_string: str) -> List[Subtitle]:
+    def get_subtitle_pages(self, search_subpath: str, search_string: str, page_length: int) -> int:
         cursor = self.conn.cursor()
-        cursor.execute("SELECT * FROM subtitles WHERE video_id LIKE ? AND text ILIKE ?", [f"{search_subpath if search_subpath != '.' else ''}%", f"%{search_string}%"])
+        cursor.execute("SELECT COUNT(*) FROM subtitles WHERE video_id LIKE ? AND text ILIKE ?", [f"{search_subpath if search_subpath != '.' else ''}%", f"%{search_string}%"])
+        row = cursor.fetchone()
+        count: int
+        if row is None:
+            count = 0
+        else:
+            count = row[0]
+        pages = math.ceil(count / page_length)
+        return pages
+
+    def search_subtitles(self, search_subpath: str, search_string: str, page: int, page_length: int | None) -> List[Subtitle]:
+        offset = page * page_length if page_length is not None else None
+        cursor = self.conn.cursor()
+        cursor.execute(f"SELECT * FROM subtitles WHERE video_id LIKE ? AND text ILIKE ? LIMIT ?{ " OFFSET ?" if offset is not None else "" }", [f"{search_subpath if search_subpath != '.' else ''}%", f"%{search_string}%", page_length, *([offset] if offset is not None else [])])
         rows = cursor.fetchall()
         subs = [Subtitle(id=subtitle_id, video_id=video_id, text=text, start=start, end=end) for (subtitle_id, video_id, text, start, end) in rows]
         cursor.close()
@@ -114,13 +128,6 @@ class SubtitleDatabase(pykka.ThreadingActor):
     def update_video(self, video: Video):
         cursor = self.conn.cursor()
         cursor.execute("INSERT OR REPLACE INTO videos (video_id, status, fail_reason) VALUES (?, ?, ?)", [video.id, video.status.value, video.fail_reason])
-        self.conn.commit()
-        cursor.close()
-
-    
-    def insert_subtitle(self, subtitle: Subtitle):
-        cursor = self.conn.cursor()
-        cursor.execute('''INSERT OR REPLACE INTO subtitles (subtitle_id, video_id, text, start_seconds, end_seconds) VALUES (?,?,?,?,?)''', [subtitle.id, subtitle.video_id, subtitle.text, subtitle.start, subtitle.end])
         self.conn.commit()
         cursor.close()
 
@@ -256,9 +263,12 @@ class SubtitleIndexer():
     def get_path(self, search_subpath: str) -> Path:
         subpath = self.root_path.joinpath(search_subpath)
         return subpath
+    
+    def get_subtitle_pages(self, search_subpath: str, search_string: str, page_length: int) -> int:
+        return self.db.get_subtitle_pages(search_subpath, search_string, page_length).get()
 
-    def search_subtitles(self, search_subpath: str, search_string: str) -> List[Subtitle]:
-        return self.db.search_subtitles(search_subpath, search_string).get()
+    def search_subtitles(self, search_subpath: str, search_string: str, page: int, page_length: int | None) -> List[Subtitle]:
+        return self.db.search_subtitles(search_subpath, search_string, page, page_length).get()
 
     def find_subtitle(self, subtitle_id: str) -> Optional[Subtitle]:
         return self.db.find_subtitle(subtitle_id).get()

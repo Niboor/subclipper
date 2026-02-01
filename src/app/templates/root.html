@@ -35,12 +35,14 @@
                 hx-trigger="click"
                 hx-target="main"
                 hx-push-url="true"
-                hx-ext="preserve-params"
-                preserve-params="false"
             >
                 <img src="/public/favicon.svg" />
                 <h1 class="text-xl hidden md:flex p-2 text-center md:text-left">
+                    {% if single_show_name is not none %}
+                    {{ single_show_name }} Clip Generator
+                    {% else %}
                     Subclipper
+                    {% endif %}
                 </h1>
             </div>
             <div
@@ -51,28 +53,26 @@
                     {% include "search_icon.html" %}
                     <input
                         id="search"
-                        class="grow"
+                        class="grow w-full"
                         name="filter"
                         type="search"
                         placeholder="Search for a subtitle..."
                         value="{{ request.args.get('filter') or '' }}"
-                        hx-get="/"
+                        hx-get=""
                         hx-trigger="search, keyup delay:200ms changed"
                         hx-target="main"
                         hx-replace-url="true"
                         hx-ext="preserve-params"
-                        preserve-params="path"
-                        style="width: 100%;"
+                        remove-params="filter"
                     />
                 </label>
             </div>
             <div class="flex-initial md:flex-1 flex flex-row justify-around md:px-4">
                 <div
                     class="flex-auto flex justify-center"
-                    hx-get="/video_selection_dropdown"
+                    hx-get="/video_selection_dropdown/*"
                     hx-trigger="load, refetch-current-path from:body"
-                    hx-ext="preserve-params"
-                    preserve-params="path"
+                    hx-ext="interpolate-current-path"
                 >
                     
                 </div>

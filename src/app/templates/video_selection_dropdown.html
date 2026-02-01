@@ -4,7 +4,7 @@
         role="button"
         class="btn"
     >
-        Currently searching: {{ request.args.get('path') if request.args.get('path') != '.' else 'All Files' }}
+        Currently searching: {{ path if path != '.' else 'All Files' }}
     </div>
     <ul
         tabindex="1"

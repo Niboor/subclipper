@@ -25,8 +25,11 @@ async function main() {
               return true
             }
 
+            const removeParamsAttribute: string | null = event.detail.elt.getAttribute(`remove-params`)
+            const removeParams = removeParamsAttribute !== null ? removeParamsAttribute.split(` `) : []
+
             const onlyPreserveTheseParams = (
-              preserveParams === null || preserveParams === `true` || preserveParams === `*` || preserveParams === ``
+              preserveParams === null || preserveParams === `true` || preserveParams === `*` || preserveParams === `` || preserveParams.startsWith(`not`)
                 ? undefined
                 : preserveParams.split(` `)
             )
@@ -38,6 +41,16 @@ async function main() {
             const nextSearchParams = new URLSearchParams(params)
             // The query parameters currently in the browser's URL, filtering out the params that should not be preserved
             const currentSearchParams = new URLSearchParams(window.location.search)
+
+            // Remove any params that we explicitly do not want to preserve in the current search params, and who also appears in the nextSearchParams
+            currentSearchParams.forEach((value, key) => {
+              if(removeParams.includes(key) && nextSearchParams.getAll(key).includes(value)) {
+                currentSearchParams.delete(key)
+                nextSearchParams.delete(key, value)
+              }
+            })
+
+            // Remove any params that are not listed in onlyPreserveTheseParams
             if(onlyPreserveTheseParams !== undefined) {
               currentSearchParams.forEach((_, key) => {
                 if(!onlyPreserveTheseParams.includes(key)) {
@@ -58,6 +71,24 @@ async function main() {
             event.detail.path = `${path}?${newSearchParams.toString()}`
         }
         return true
+    },
+  })
+
+  htmx.defineExtension(`interpolate-current-path`, {
+    onEvent(name, event) {
+      if(name === `htmx:configRequest`) {
+
+        
+        // Path that a request is sent to
+        const path = event.detail.path.split("?")[0]
+        // Query parameters sent to that path
+        const params = event.detail.path.split("?")[1] || ""
+
+        event.detail.path = `${path.replaceAll(`*`, window.location.pathname.slice(1))}?${params}`
+
+
+      }
+      return true
     },
   })
 

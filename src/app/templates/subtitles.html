@@ -46,15 +46,15 @@
         {% endif %}
     </div>
     <div class="flex-none join flex flex-row justify-safe-center min-h-12 overflow-x-auto">
-        {% for page in pages %}
+        {% for i in range(0, pages) %}
             <button
-                class="join-item btn {{ 'btn-active' if request.args.get('page') == loop.index0|string or (request.args.get('page') is none and loop.first) else '' }}"
-                hx-get="/?page={{ loop.index0 }}"
+                class="join-item btn {{ 'btn-active' if request.args.get('page') == i|string or (request.args.get('page') is none and loop.first) else '' }}"
+                hx-get="/?page={{ i }}"
                 hx-target="main"
                 hx-replace-url="true"
                 hx-ext="preserve-params"
             >
-                {{ loop.index }}
+                {{ i+1 }}
             </button>
         {% endfor %}
     </div>
