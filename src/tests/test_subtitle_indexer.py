@@ -11,13 +11,11 @@ samples_dir = Path(__file__).parent.parent / "samples"
 
 @pytest.fixture(scope="session")
 def subtitle_indexer():
-    indexer = SubtitleIndexer(samples_dir, "test.db")
+    indexer = SubtitleIndexer(samples_dir, "")
     for (path, progress) in indexer.on_scanning_progress():
         if path == Path(".") and progress == 1.0:
             yield indexer
             break
-    Path.unlink(Path("test.db"))
-    Path.unlink(Path("test.db.wal"))
     indexer.stop()
 
 # Subtitle scanning is done in subtitle_indexer fixture but it should not be allowed to go indefinitely
