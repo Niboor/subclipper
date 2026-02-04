@@ -28,9 +28,9 @@
         <span>Loading...</span>
     </div>
     <header class="flex-none">
-        <div class="navbar bg-base-100 shadow-sm flex flex-row !p-0">
+        <div class="navbar bg-base-100 shadow-sm flex md:flex-row flex-col !p-0">
             <div
-                class="flex-initial md:flex-1 flex flex-row gap-2 md:px-4 cursor-pointer"
+                class="flex-initial md:flex-1 hidden md:flex flex-row gap-2 md:px-4 cursor-pointer"
                 hx-get="/"
                 hx-trigger="click"
                 hx-target="main"
@@ -67,7 +67,7 @@
                     />
                 </label>
             </div>
-            <div class="flex-initial md:flex-1 flex flex-row justify-around md:px-4">
+            <div class="w-full flex-initial md:flex-1 flex flex-row justify-around md:px-4">
                 <div
                     class="flex-auto flex justify-center"
                     hx-get="/video_selection_dropdown/*"

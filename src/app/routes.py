@@ -194,10 +194,14 @@ def scan(path: str):
 @bp.route("/video_selection_dropdown/", defaults={'path': '.'})
 @bp.route("/video_selection_dropdown/<path:path>")
 def current_path(path):
-    return cached_render_template(
-        'video_selection_dropdown.html',
-        path=path
-    )
+    if path == "." and config.single_show_name is None:
+        # We do not want to show it on the homescreen
+        return ""
+    else:
+        return cached_render_template(
+            'video_selection_dropdown.html',
+            path=path
+        )
 
 @bp.route("/locate/<subtitle_id>")
 def locate(subtitle_id: str):
