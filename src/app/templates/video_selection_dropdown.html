@@ -1,0 +1,19 @@
+<div class="dropdown w-full">
+    <div
+        tabindex="0"
+        role="button"
+        class="btn w-full"
+    >
+        Currently searching: {{ path if path != '.' else 'All Files' }}
+    </div>
+    <ul
+        tabindex="1"
+        class="w-full dropdown-content menu overflow-auto max-h-180 bg-base-100 rounded-box z-1 p-2 shadow-sm"
+        hx-get="/files"
+        hx-trigger="load"
+    >
+        <div class="skeleton bg-base-200 h-4 w-28"></div>
+        <div class="skeleton bg-base-200 h-4 w-full"></div>
+        <div class="skeleton bg-base-200 h-4 w-full"></div>
+    </ul>
+</div>

@@ -1,0 +1,23 @@
+<closable-dialog
+    {% if sub_data is not none %}
+        open
+    {% endif %}
+>
+    <div
+        id="settings"
+        class="w-full overflow-auto flex md:flex-1 box-border"
+    >
+        {% with sub=sub_data, errs=errs %}
+            {% include "settings.html" %}
+        {% endwith %}
+    </div>
+    <div class="divider"></div>
+    <div
+        id="gif-view"
+        class="relative w-full min-h-[180px] flex md:flex-1 justify-center items-center overflow-auto"
+    >
+        {% with %}
+            {% include "gif_view.html" %}
+        {% endwith %}
+    </div>
+</closable-dialog>
