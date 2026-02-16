@@ -102,20 +102,28 @@ class VideoProcessor:
 
                 style = TextStyle(font="Google Sans", font_size=settings.font_size)
 
+                start_time_ms = int(settings.start_time * 1000)
+                end_time_ms = int(settings.end_time * 1000)
                 clip_settings = SubSettings(
                     input_path=video.path,
                     clip_path=output_clip,
                     output_path=output_path,
                     output_format=VideoFormat[settings.format.upper()],
-                    start=settings.start_time * 1000,
-                    end=settings.end_time * 1000,
+                    start=start_time_ms,
+                    end=end_time_ms,
                     resolution=settings.resolution,
                     subtitle_style=style,
                     crop=settings.crop,
                     boomerang=settings.boomerang
                 )
 
-                err, ok = generate(clip_settings, subs)
+                caption = Subtitle(
+                        start_time_ms,
+                        end_time_ms,
+                        [line for line in settings.caption.split('\n')]
+                    ) if settings.caption else None
+
+                err, ok = generate(clip_settings, subs, caption)
 
                 if ok:
                     return output_path, None
