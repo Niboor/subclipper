@@ -58,7 +58,6 @@ def create_clip_settings_from_request() -> [list[Subtitle], ClipSettings]:
         end_time=subs[-1].end_s,
         original_start_time=subs[0].start_s,
         original_end_time=subs[-1].end_s,
-        text='',
         crop=request.args.get('crop', False, type=bool),
         resolution=request.args.get('resolution', 500, type=int),
         id=request.args.get('sub_id', -1, type=int),
@@ -67,8 +66,7 @@ def create_clip_settings_from_request() -> [list[Subtitle], ClipSettings]:
         caption=request.args.get('caption', '', type=str),
         boomerang=request.args.get('boomerang', False, type=bool),
         colour=request.args.get('colour', False, type=bool),
-        format=request.args.get('format', 'webp', type=str),
-        font_name=config.font_name
+        format=request.args.get('format', 'webp', type=str)
     )
     return subs, clip_settings
 

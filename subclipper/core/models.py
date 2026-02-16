@@ -34,7 +34,6 @@ class ClipSettings:
     end_time: float
     original_start_time: float
     original_end_time: float
-    text: str
     crop: bool
     resolution: int
     id: int
@@ -44,7 +43,6 @@ class ClipSettings:
     boomerang: bool
     colour: bool
     format: str
-    font_name: str
 
     def validate(self) -> dict:
         """Validate the clip settings and return any errors."""
@@ -58,8 +56,6 @@ class ClipSettings:
             errs['resolution'] = 'resolution must be between 50 and 1024'
         if self.episode < 0:
             errs['episode'] = 'invalid episode id'
-        if len(self.text) > 200:
-            errs['text'] = 'subtitle text too large'
         if len(self.caption) > 200:
             errs['caption'] = 'caption too large'
         if self.font_size > 50:

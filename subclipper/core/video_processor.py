@@ -100,7 +100,6 @@ class VideoProcessor:
                 output_clip = tmp_dir / 'clip.mp4'
                 output_path = tmp_dir / f'clip.{settings.format}'
 
-                # TODO this is just some dummy stuff, should be removed later
                 style = TextStyle(font="Google Sans", font_size=settings.font_size)
 
                 clip_settings = SubSettings(
