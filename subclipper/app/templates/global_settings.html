@@ -92,11 +92,11 @@
 </fieldset>
 <fieldset>
     <legend class="fieldset-legend">Caption</legend>
-    <input
-        class="input w-full {{ 'input-error' if errs is not none and 'caption' in errs else '' }}"
+    <textarea
+        class="textarea w-full {{ 'input-error' if errs is not none and 'caption' in errs else '' }}"
         name="caption"
         type="text"
-    />
+    ></textarea>
     {% if errs is not none and 'caption' in errs %}
         <div class="validator-hint text-error">{{ errs['caption'] }}</div>
     {% endif %}
