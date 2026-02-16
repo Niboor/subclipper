@@ -9,7 +9,7 @@ from contextlib import contextmanager
 from .models import Video, Subtitle, ClipSettings
 from sub2clip.sub2clip import (extract_subs_by_language, generate)
 from sub2clip.generation import (ClipSettings as SubSettings, TextStyle, VideoFormat)
-from sub2clip.subtitles import (Subtitle as Huts)
+from sub2clip.subtitles import (Subtitle as SSubtitle)
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +81,7 @@ class VideoProcessor:
             logger.exception(f"Failed to extract subtitles from {video_path}")
             raise
 
-    def generate_clip(self, settings: ClipSettings, subs: list[Huts]) -> Tuple[Optional[Path], Optional[str]]:
+    def generate_clip(self, settings: ClipSettings, subs: list[SSubtitle]) -> Tuple[Optional[Path], Optional[str]]:
         """Generate a video clip with the given settings."""
         try:
             with log_time("clip_generation"):
