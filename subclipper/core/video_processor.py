@@ -100,7 +100,7 @@ class VideoProcessor:
                 output_clip = tmp_dir / 'clip.mp4'
                 output_path = tmp_dir / f'clip.{settings.format}'
 
-                style = TextStyle(font="Google Sans", font_size=settings.font_size)
+                style = TextStyle(font=self.font_name, font_size=settings.font_size)
 
                 start_time_ms = int(settings.start_time * 1000)
                 end_time_ms = int(settings.end_time * 1000)

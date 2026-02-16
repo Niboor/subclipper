@@ -7,10 +7,16 @@ logger = logging.getLogger(__name__)
 
 class Config:
     def __init__(self):
+        import subprocess
+
+        font = subprocess.check_output(
+            ["fc-match", "sans", "-f", "%{family}"]
+        ).decode().strip()
+
         self.search_path = Path(self._get_required_env('SEARCH_PATH'))
         self.show_name = self._get_required_env('SHOW_NAME')
         self.default_page_length = int(self._get_optional_env('DEFAULT_PAGE_LENGTH', '50'))
-        self.font_name = "Google Sans"
+        self.font_name = font
         logger.info(f"Initialized Config with search_path: {self.search_path}, show_name: {self.show_name}, font_name: {self.font_name}")
         self._video_processor = None
 
