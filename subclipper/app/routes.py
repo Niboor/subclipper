@@ -9,6 +9,7 @@ import flask
 from ..core.models import ClipSettings
 from ..utils.config import Config
 from ..core.video_processor import VideoProcessor
+from sub2clip.subtitles import Subtitle
 
 logger = logging.getLogger(__name__)
 bp = Blueprint('main', __name__)
@@ -20,25 +21,56 @@ def cached_render_template(template, **context):
     response = make_response(rendered_template)
     return response
 
-def create_clip_settings_from_request() -> ClipSettings:
+def create_clip_settings_from_request() -> [list[Subtitle], ClipSettings]:
     """Create ClipSettings from the current request's query parameters."""
-    return ClipSettings(
-        start_time=request.args.get('start', 0, type=float),
-        end_time=request.args.get('end', 0, type=float),
-        original_start_time=request.args.get('original_start', 0, type=float),
-        original_end_time=request.args.get('original_end', 0, type=float),
-        text=request.args.get('text', '', type=str),
+
+    clips = {}
+    for key in request.args.keys():
+        if key.startswith('clips['):
+            import re
+            match = re.match(r'clips\[(\d+)\]\[(\w+)\]', key)
+            if match:
+                clip_id, field = match.groups()
+                if clip_id not in clips:
+                    clips[clip_id] = {}
+                clips[clip_id][field] = request.args.get(key)
+
+
+    sorted_clips = dict(sorted(clips.items()))
+    subs = []
+
+    for idx, clip in enumerate(sorted_clips.values()):
+        start = float(clip['start_time']) * 1000
+        end = float(clip['end_time']) * 1000
+        if (idx > 0):
+            prv = subs[-1].end
+            if prv > start:
+                start = prv
+
+        subs.append(Subtitle(
+            start=start,
+            end=end,
+            text=[line for line in clip['text'].split('\n')]
+        ))
+
+    clip_settings = ClipSettings(
+        start_time=subs[0].start_s,
+        end_time=subs[-1].end_s,
+        original_start_time=subs[0].start_s,
+        original_end_time=subs[-1].end_s,
+        text='',
         crop=request.args.get('crop', False, type=bool),
         resolution=request.args.get('resolution', 500, type=int),
         id=request.args.get('sub_id', -1, type=int),
-        episode=request.args.get('episode', -1, type=int),
+        episode=int(clip['episode']),
         font_size=request.args.get('font_size', 20, type=int),
         caption=request.args.get('caption', '', type=str),
         boomerang=request.args.get('boomerang', False, type=bool),
         colour=request.args.get('colour', False, type=bool),
         format=request.args.get('format', 'webp', type=str),
-        font_path=config.font_path
+        font_name=config.font_name
     )
+    return subs, clip_settings
 
 @bp.route("/public/<path:path>")
 def get_public(path):
@@ -83,18 +115,16 @@ def locate(video_id: str, sub_id: str):
 
     if len(sub_page) == 0:
         return f"no subtitle with id {sub_id} from video with id {video_id} found", 404
-    
+
     resp = flask.Response("OK")
     fragment_path = f"/?page={sub_page[0]}&page_length={page_length}#e{video_id}-s{sub_id}"
     resp.headers['HX-Location'] = json.dumps({"path": fragment_path, "target": "main"})
     resp.status_code = 200
 
     return resp
-    
 
 
-@bp.route("/sub_form/<video_id>/<sub_id>")
-def get_sub(video_id, sub_id):
+def sub(video_id, sub_id):
     videos = config.video_processor.load_videos()
     try:
         video = videos[int(video_id)]
@@ -106,30 +136,58 @@ def get_sub(video_id, sub_id):
     except (IndexError, ValueError):
         return "Subtitle not found", 404
 
-    sub_data = {
+    prv = int(sub_id) - 1 if sub.prv else None
+    nxt = int(sub_id) + 1 if sub.nxt else None
+
+    return {
         'id': sub_id,
         'episode': video.id,
-        'start_time': sub.start,
-        'end_time': sub.end,
+        'start_time': sub.start_s,
+        'end_time': sub.end_s,
         'text': sub.text,
-        'crop': False,
-        'resolution': 320,
-        'font_type': str(config.font_path),
-        'font_size': 20,
-        'caption': "",
-        'colour': False,
-        'boomerang': False,
+        'prv': prv,
+        'nxt': nxt
     }
+
+@bp.route("/sub_form/<video_id>/<sub_id>")
+def temp(video_id, sub_id):
+    videos = config.video_processor.load_videos()
+    sub_data = sub(video_id, sub_id)
+    hx_request = request.headers.get("HX-Request")
+    if hx_request is None:
+        return cached_render_template("root.html", sub_data=sub_data, videos=videos)
+    else:
+        return cached_render_template("tweak_modal.html", sub_data=sub_data, errs=None)
+
+@bp.route("/sub_data/<video_id>/<sub_id>")
+def get_sub(video_id, sub_id):
+    videos = config.video_processor.load_videos()
+    sub_data = sub(video_id, sub_id)
 
     hx_request = request.headers.get("HX-Request")
     if hx_request is None:
         return cached_render_template("root.html", sub_data=sub_data, videos=videos)
     else:
-        return cached_render_template("tweak_modal.html", sub_data=sub_data)
+        return cached_render_template("clip_settings.html", sub=sub_data, errs=None)
+
+@bp.route("/default_settings")
+def get_default_settings():
+    settings = {
+        'crop': False,
+        'resolution': 200,
+        'font_name': str(config.font_name),
+        'font_size': 25,
+        'caption': "",
+        'colour': False,
+        'boomerang': False
+    }
+
+    return cached_render_template("global_settings.html", settings=settings)
+
 
 @bp.route("/gif_view")
 def get_gif_view():
-    settings = create_clip_settings_from_request()
+    subs, settings = create_clip_settings_from_request()
 
     errors = settings.validate()
     if errors:
@@ -141,9 +199,9 @@ def get_gif_view():
 
 @bp.route("/gif")
 def get_gif():
-    settings = create_clip_settings_from_request()
+    subs, settings = create_clip_settings_from_request()
 
-    output_path, error = config.video_processor.generate_clip(settings)
+    output_path, error = config.video_processor.generate_clip(settings, subs)
     if error:
         logger.warning(f"Failed to generate clip: {error}")
         return error, 500

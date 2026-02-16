@@ -36,7 +36,7 @@
                                     #e{{ sub.video_id }}-s{{ sub.id }}
                                 </a>
                             </div>
-                            <div>{{ sub.text }}</div>
+                            <div>{{ sub.text | join(' ') }}</div>
                         </div>
                     </li>
                 {% endfor %}

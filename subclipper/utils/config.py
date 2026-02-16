@@ -10,10 +10,10 @@ class Config:
         self.search_path = Path(self._get_required_env('SEARCH_PATH'))
         self.show_name = self._get_required_env('SHOW_NAME')
         self.default_page_length = int(self._get_optional_env('DEFAULT_PAGE_LENGTH', '50'))
-        self.font_path = self._find_font()
-        logger.info(f"Initialized Config with search_path: {self.search_path}, show_name: {self.show_name}, font_path: {self.font_path}")
+        self.font_name = "Google Sans"
+        logger.info(f"Initialized Config with search_path: {self.search_path}, show_name: {self.show_name}, font_name: {self.font_name}")
         self._video_processor = None
-        
+
     def _get_required_env(self, name: str) -> str:
         """Get a required environment variable. If it is not present, the program will panic."""
         value = os.getenv(name)
@@ -28,19 +28,13 @@ class Config:
         if value is None:
             return default
         return value
-        
-    def _find_font(self) -> Path:
-        """Find a suitable font for subtitle rendering."""
-        from matplotlib import font_manager
-        font = font_manager.findfont('')  # Get a fallback font
-        return Path(font)
-        
+
     @property
     def video_processor(self):
         """Get the VideoProcessor instance, creating it if necessary."""
         if self._video_processor is None:
             from ..core.video_processor import VideoProcessor
-            self._video_processor = VideoProcessor(self.search_path, self.font_path)
+            self._video_processor = VideoProcessor(self.search_path, self.font_name)
             # Load videos on startup
             self._video_processor.load_videos()
-        return self._video_processor 
+        return self._video_processor

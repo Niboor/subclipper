@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Video/subtitle processing web app"
 dependencies = [
     "flask>=3.1.0",
-    "sub2clip @ git+https://github.com/lpalinckx/sub2clip.git@v2.0.0#subdirectory=packages/sub2clip"
+    "sub2clip @ git+https://github.com/lpalinckx/sub2clip.git@sub2clip-v2.3.0#subdirectory=packages/sub2clip"
 ]
 
 [project.optional-dependencies]

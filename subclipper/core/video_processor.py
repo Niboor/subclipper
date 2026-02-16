@@ -7,7 +7,9 @@ import time
 from contextlib import contextmanager
 
 from .models import Video, Subtitle, ClipSettings
-from subs.subs import (extract_subs, generate_video)
+from sub2clip.sub2clip import (extract_subs_by_language, generate)
+from sub2clip.generation import (ClipSettings as SubSettings, TextStyle, VideoFormat)
+from sub2clip.subtitles import (Subtitle as Huts)
 
 logger = logging.getLogger(__name__)
 
@@ -21,11 +23,11 @@ def log_time(operation: str):
         logger.info(f"{operation} completed in {duration:.2f} seconds")
 
 class VideoProcessor:
-    def __init__(self, search_path: Path, font_path: Path):
+    def __init__(self, search_path: Path, font_name: str):
         self.search_path = search_path
-        self.font_path = font_path
+        self.font_name = font_name
         self._videos: List[Video] = []
-        logger.info(f"Initialized VideoProcessor with search_path: {search_path}, font_path: {font_path}")
+        logger.info(f"Initialized VideoProcessor with search_path: {search_path}, font_name: {font_name}")
 
     def load_videos(self) -> List[Video]:
         """Load all videos and their subtitles from the search path."""
@@ -64,24 +66,22 @@ class VideoProcessor:
         try:
             with log_time(f"subtitle_extraction_{video_id}"):
                 logger.debug(f"Extracting subtitles from {video_path}")
-                ssa_events, ok = extract_subs(str(video_path))
+                subtitles, ok = extract_subs_by_language(video_path, ['eng', 'nld', 'dut', 'nl'])
                 if ok:
                     return [
-                        Subtitle(
+                        Subtitle.from_subtitle(
+                            sub,
                             id=idx,
-                            start=event.start / 1000,  # Convert to seconds
-                            end=event.end / 1000,
-                            text=event.text,
                             video_id=video_id
                         )
-                        for idx, event in enumerate(ssa_events)
+                        for idx, sub in enumerate(subtitles)
                     ]
-                raise Exception(ssa_events)
+                raise Exception(subtitles)
         except Exception as e:
             logger.exception(f"Failed to extract subtitles from {video_path}")
             raise
 
-    def generate_clip(self, settings: ClipSettings) -> Tuple[Optional[Path], Optional[str]]:
+    def generate_clip(self, settings: ClipSettings, subs: list[Huts]) -> Tuple[Optional[Path], Optional[str]]:
         """Generate a video clip with the given settings."""
         try:
             with log_time("clip_generation"):
@@ -100,23 +100,23 @@ class VideoProcessor:
                 output_clip = tmp_dir / 'clip.mp4'
                 output_path = tmp_dir / f'clip.{settings.format}'
 
-                err, ok = generate_video(
-                    settings.start_time,
-                    settings.end_time,
-                    str(output_clip),
-                    str(output_path),
-                    settings.text,
-                    settings.caption,
-                    str(video.path),
-                    20,  # fps
-                    settings.crop,
-                    settings.boomerang,
-                    settings.resolution,
-                    self.font_path,
-                    settings.font_size,
-                    settings.colour,
-                    settings.format
+                # TODO this is just some dummy stuff, should be removed later
+                style = TextStyle(font="Google Sans", font_size=settings.font_size)
+
+                clip_settings = SubSettings(
+                    input_path=video.path,
+                    clip_path=output_clip,
+                    output_path=output_path,
+                    output_format=VideoFormat[settings.format.upper()],
+                    start=settings.start_time * 1000,
+                    end=settings.end_time * 1000,
+                    resolution=settings.resolution,
+                    subtitle_style=style,
+                    crop=settings.crop,
+                    boomerang=settings.boomerang
                 )
+
+                err, ok = generate(clip_settings, subs)
 
                 if ok:
                     return output_path, None
@@ -138,7 +138,7 @@ class VideoProcessor:
                         continue
 
                     for sub in video.subs:
-                        if query is None or query.lower() in sub.text.lower():
+                        if query is None or any(query.lower() in line.lower() for line in sub.text):
                             results.append(sub)
 
                 return results
