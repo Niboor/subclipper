@@ -77,7 +77,6 @@
 
 
 <script>
-// Initialize clip sequence tracker
     if (!window.clipSequence) {
         window.clipSequence = new Set();
     }
@@ -178,7 +177,7 @@
     });
 
     // Update hidden inputs when slider changes
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('htmx:afterSwap', () => {
         const observer = new MutationObserver((mutations) => {
             mutations.forEach((mutation) => {
                 if (mutation.type === 'attributes' && mutation.target.tagName === 'DUAL-HANDLE-SLIDER') {
