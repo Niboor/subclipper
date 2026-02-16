@@ -56,8 +56,6 @@ class ClipSettings:
             errs['resolution'] = 'resolution must be between 50 and 1024'
         if self.episode < 0:
             errs['episode'] = 'invalid episode id'
-        if len(self.caption) > 200:
-            errs['caption'] = 'caption too large'
         if self.font_size > 50:
             errs['font_size'] = 'font size too large'
         if self.format not in {'gif', 'webp'}:
