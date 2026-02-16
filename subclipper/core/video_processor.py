@@ -114,7 +114,8 @@ class VideoProcessor:
                     resolution=settings.resolution,
                     subtitle_style=style,
                     crop=settings.crop,
-                    boomerang=settings.boomerang
+                    boomerang=settings.boomerang,
+                    hd_gif=settings.colour
                 )
 
                 caption = Subtitle(
