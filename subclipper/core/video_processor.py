@@ -10,10 +10,8 @@ from .models import Video, Subtitle, ClipSettings
 from sub2clip.sub2clip import (extract_subs_by_language, extract_subs, generate)
 from sub2clip.generation import (ClipSettings as SubSettings, TextStyle, VideoFormat)
 from sub2clip.subtitles import (Subtitle as SSubtitle)
-from ..utils.config import Config
 
 logger = logging.getLogger(__name__)
-config = Config()
 
 @contextmanager
 def log_time(operation: str):
@@ -25,9 +23,10 @@ def log_time(operation: str):
         logger.info(f"{operation} completed in {duration:.2f} seconds")
 
 class VideoProcessor:
-    def __init__(self, search_path: Path, font_name: str):
+    def __init__(self, search_path: Path, font_name: str, languages: list[str]):
         self.search_path = search_path
         self.font_name = font_name
+        self.languages = languages
         self._videos: List[Video] = []
         logger.info(f"Initialized VideoProcessor with search_path: {search_path}, font_name: {font_name}")
 
@@ -72,7 +71,7 @@ class VideoProcessor:
         try:
             with log_time(f"subtitle_extraction_{video_id}"):
                 logger.debug(f"Extracting subtitles from {video_path}")
-                langs = [lang.strip().lower() for lang in config.languages.split(',')] if config.languages else None
+                langs = [lang.strip().lower() for lang in self.languages.split(',')] if self.languages else None
                 subtitles, ok = extract_subs_by_language(video_path, langs) if langs else extract_subs(video_path)
                 if ok:
                     return [

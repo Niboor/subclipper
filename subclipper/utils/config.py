@@ -41,7 +41,7 @@ class Config:
         """Get the VideoProcessor instance, creating it if necessary."""
         if self._video_processor is None:
             from ..core.video_processor import VideoProcessor
-            self._video_processor = VideoProcessor(self.search_path, self.font_name)
+            self._video_processor = VideoProcessor(self.search_path, self.font_name, self.languages)
             # Load videos on startup
             self._video_processor.load_videos()
         return self._video_processor
