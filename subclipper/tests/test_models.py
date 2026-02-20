@@ -19,13 +19,13 @@ def test_subtitle_creation():
         id=1,
         start=10.0,
         end=15.0,
-        text="Test subtitle",
+        text=["Test subtitle"],
         video_id=1
     )
     assert sub.id == 1
     assert sub.start == 10.0
     assert sub.end == 15.0
-    assert sub.text == "Test subtitle"
+    assert sub.text[0] == "Test subtitle"
     assert sub.video_id == 1
 
 def test_clip_settings_validation():
@@ -34,7 +34,6 @@ def test_clip_settings_validation():
         end_time=5.0,
         original_start_time=0.0,
         original_end_time=5.0,
-        text="Test",
         crop=False,
         resolution=500,
         id=0,
@@ -44,7 +43,6 @@ def test_clip_settings_validation():
         boomerang=False,
         colour=False,
         format="webp",
-        font_path=Path("/path/to/font.ttf")
     )
     assert settings.validate() == {}
 
@@ -55,7 +53,6 @@ def test_clip_settings_validation_errors():
         end_time=0.0,
         original_start_time=5.0,
         original_end_time=0.0,
-        text="Test",
         crop=False,
         resolution=500,
         id=0,
@@ -64,8 +61,7 @@ def test_clip_settings_validation_errors():
         caption="",
         boomerang=False,
         colour=False,
-        format="webp",
-        font_path=Path("/path/to/font.ttf")
+        format="webp"
     )
     assert "end" in settings.validate()
 
@@ -83,16 +79,6 @@ def test_clip_settings_validation_errors():
     settings.episode = -1
     assert "episode" in settings.validate()
 
-    # Test text too long
-    settings.episode = 0
-    settings.text = "a" * 201
-    assert "text" in settings.validate()
-
-    # Test caption too long
-    settings.text = "Test"
-    settings.caption = "a" * 201
-    assert "caption" in settings.validate()
-
     # Test font size too large
     settings.caption = ""
     settings.font_size = 51
@@ -101,4 +87,4 @@ def test_clip_settings_validation_errors():
     # Test invalid format
     settings.font_size = 20
     settings.format = "invalid"
-    assert "format" in settings.validate() 
+    assert "format" in settings.validate()
