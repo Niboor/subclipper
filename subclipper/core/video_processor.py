@@ -46,7 +46,6 @@ class VideoProcessor:
                     f for f in sorted(self.search_path.glob('*'))
                     if f.suffix.lower() in video_formats):
 
-                    print(video_file)
                     if not video_file.is_file():
                         continue
 
