@@ -65,6 +65,7 @@ The application requires the following environment variables:
 
 The application also has the following optional environment variables:
 - `DEFAULT_PAGE_LENGTH`: the amount of subtitles shown on each page, defaults to 50 if not set
+- `SUB_LANG`: a list of ISO 639 language codes to filter subtitles based on language. If left empty, the first subtitle track of each file is used instead.
 
 These are automatically set when using `make run`, but you can override them:
 

@@ -17,6 +17,7 @@ class Config:
         self.show_name = self._get_required_env('SHOW_NAME')
         self.default_page_length = int(self._get_optional_env('DEFAULT_PAGE_LENGTH', '50'))
         self.font_name = font
+        self.languages = self._get_optional_env('SUB_LANG', None)
         logger.info(f"Initialized Config with search_path: {self.search_path}, show_name: {self.show_name}, font_name: {self.font_name}")
         self._video_processor = None
 

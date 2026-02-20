@@ -9,7 +9,7 @@ description = "Video/subtitle processing web app"
 requires-python = ">=3.10"
 dependencies = [
     "flask>=3.1.0",
-    "sub2clip @ git+https://github.com/lpalinckx/sub2clip.git@sub2clip-v2.3.1#subdirectory=packages/sub2clip"
+    "sub2clip @ git+https://github.com/lpalinckx/sub2clip.git@sub2clip-v2.3.2#subdirectory=packages/sub2clip"
 ]
 
 [project.optional-dependencies]

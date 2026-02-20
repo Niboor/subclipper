@@ -7,11 +7,13 @@ import time
 from contextlib import contextmanager
 
 from .models import Video, Subtitle, ClipSettings
-from sub2clip.sub2clip import (extract_subs_by_language, generate)
+from sub2clip.sub2clip import (extract_subs_by_language, extract_subs, generate)
 from sub2clip.generation import (ClipSettings as SubSettings, TextStyle, VideoFormat)
 from sub2clip.subtitles import (Subtitle as SSubtitle)
+from ..utils.config import Config
 
 logger = logging.getLogger(__name__)
+config = Config()
 
 @contextmanager
 def log_time(operation: str):
@@ -39,7 +41,12 @@ class VideoProcessor:
             logger.info(f"Loading videos from {self.search_path}")
             with log_time("video_loading"):
                 videos = []
-                for idx, video_file in enumerate(sorted(self.search_path.glob('*'))):
+                video_formats = ['.mp4', '.mov', '.mkv', '.avi']
+                for idx, video_file in enumerate(
+                    f for f in sorted(self.search_path.glob('*'))
+                    if f.suffix.lower() in video_formats):
+
+                    print(video_file)
                     if not video_file.is_file():
                         continue
 
@@ -66,7 +73,8 @@ class VideoProcessor:
         try:
             with log_time(f"subtitle_extraction_{video_id}"):
                 logger.debug(f"Extracting subtitles from {video_path}")
-                subtitles, ok = extract_subs_by_language(video_path, ['eng', 'nld', 'dut', 'nl'])
+                langs = [lang.strip().lower() for lang in config.languages.split(',')] if config.languages else None
+                subtitles, ok = extract_subs_by_language(video_path, langs) if langs else extract_subs(video_path)
                 if ok:
                     return [
                         Subtitle.from_subtitle(
