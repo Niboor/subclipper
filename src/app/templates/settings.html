@@ -1,0 +1,43 @@
+{% if sub is none %}
+    <h2 class="text-lg text-base-content font-semibold w-full h-full flex flex-col justify-center items-center">
+        Select a subtitle from the list and tweak it here...
+    </h2>
+{% else %}
+<form
+    class="w-full flex flex-col justify-between gap-2"
+    hx-get="/gif_view"
+    hx-push-url="false"
+    hx-replace-url="false"
+    hx-vals='{"subtitle_id": "{{ sub.id }}", "video_id": "{{ sub.video_id }}"}'
+    hx-target="#gif-view"
+    hx-swap="innerHTML"
+    hx-indicator="#generate-gif-button"
+>
+    <div id="subtitle-settings">
+        {% with %}
+            {% include "clip_settings.html" %}
+        {% endwith %}
+    </div>
+
+    <div
+        id="global-settings"
+        hx-get="/default_settings"
+        hx-trigger="load once"
+        hx-target="this"
+    ></div>
+
+    <button
+        id="generate-gif-button"
+        class="btn btn-primary group [.htmx-request]:bg-base-content/10 [.htmx-request]:border-none [.htmx-request]:shadow-none [.htmx-request]:text-base-content/20 [.htmx-request]:cursor-not-allowed"
+        type="submit"
+    >
+        <div class="flex group-[.htmx-request]:hidden">Generate</div>
+        <div class="hidden group-[.htmx-request]:flex flex-row gap-2 items-center">
+            <div class="loading loading-sm"></div>
+            Generating...
+        </div>
+    </button>
+
+    <div id="saved-clips" style="display: none;"></div>
+</form>
+{% endif %}

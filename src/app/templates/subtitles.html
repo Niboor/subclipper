@@ -1,0 +1,60 @@
+<div
+    class="w-full h-full flex flex-col"
+>
+    <div
+        id="sublist"
+        class="w-full flex-1 min-h-0 flex flex-col"
+    >
+    <div class="flex-1 overflow-y-auto">
+        {% if subs|length == 0 %}
+            <div class="h-full flex justify-center items-center">
+                No results found
+            </div>
+        {% else %}
+            <ul class="list bg-base-100 rounded-box shadow-md">
+                {% for sub in subs %}
+                    <li
+                        id="id{{ sub.id }}"
+                        class="list-row hover:bg-base-200 cursor-pointer transition-colors target:bg-primary target:hover:bg-primary/50 items-center"
+                        hx-get="/sub_form/{{ sub['id'] }}"
+                        hx-target="#modal-container"
+                        preserve-params="false"
+                    >
+                        <div class="list-col-grow flex flex-col items-start">
+                            <div class="flex flex-row gap-2">
+                                <div class="text-xs uppercase font-semibold opacity-60">{{ sub.video_id }}</div>
+                            </div>
+                            <div>{{ sub.text | join(' ') }}</div>
+                        </div>
+                        <div class="tooltip tooltip-left" data-tip="Locate this subtitle chronologically">
+                            <button
+                                class="btn btn-circle btn-ghost"
+                                hx-get="/locate/{{ sub.id }}"
+                                hx-trigger="click consume"
+                                preserve-params="false"
+                                hx-target="main"
+                                hx-replace-url="true"
+                            >
+                                {% include "icons/arrow-turn-down-left.html" %}
+                            </button>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+    <div class="flex-none join flex flex-row justify-safe-center min-h-12 overflow-x-auto">
+        {% for i in range(0, pages) %}
+            <button
+                class="join-item btn {{ 'btn-active' if request.args.get('page') == i|string or (request.args.get('page') is none and loop.first) else '' }}"
+                hx-get="/?page={{ i }}"
+                hx-target="main"
+                hx-replace-url="true"
+                hx-ext="preserve-params"
+            >
+                {{ i+1 }}
+            </button>
+        {% endfor %}
+    </div>
+    </div>
+</div>

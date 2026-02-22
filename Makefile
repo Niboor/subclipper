@@ -8,8 +8,7 @@ DOCKER_IMAGE = subclipper
 DOCKER_TAG = latest
 
 # Environment variables
-SEARCH_PATH ?= $(shell pwd)/subclipper/samples
-SHOW_NAME ?= Subclipper Test
+SEARCH_PATH ?= $(shell pwd)/src/samples
 
 .PHONY: help venv install test run docker-build docker-run clean tailwind
 
@@ -45,16 +44,15 @@ yarn:
 # Development targets
 test:
 	@echo "Running tests..."
-	$(PYTHON) -m pytest subclipper/tests/ -v
+	$(PYTHON) -m pytest src/tests/ -v --log-cli-level=INFO -s
 
 run: yarn
 	@echo "Starting development server..."
-	FLASK_APP=subclipper.app \
+	FLASK_APP=src.app \
 	FLASK_ENV=development \
-	SEARCH_PATH=$(SEARCH_PATH) \
-	SHOW_NAME="$(SHOW_NAME)" \
-	$(PYTHON) -m flask run --debug
-
+	SEARCH_PATH="$(SEARCH_PATH)" \
+	# $(PYTHON) -m flask run --debug
+	gunicorn "src.app:create_app()" --threads 10 --workers 1 -b 127.0.0.1:5000 --worker-class gevent
 # Docker targets
 docker-build:
 	@echo "Building Docker image..."
@@ -63,8 +61,7 @@ docker-build:
 docker-run:
 	@echo "Running Docker container..."
 	docker run -p 8000:8000 \
-		-e SEARCH_PATH=/app/subclipper/samples \
-		-e SHOW_NAME="$(SHOW_NAME)" \
+		-e SEARCH_PATH=/app/src/samples \
 		$(DOCKER_IMAGE):$(DOCKER_TAG)
 
 # Cleanup

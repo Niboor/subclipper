@@ -1,0 +1,15 @@
+{% if not url or url == "none" %}
+    <div class="text-lg text-base-content font-semibold w-full h-full flex flex-col justify-center items-center">
+        {% include "photo_icon.html" %}
+        <h2>Clip will appear here</h2>
+    </div>
+{% else %}
+    <div class="absolute top-0 left-0 w-full h-full flex flex-col justify-center items-center z-0">
+        <div class="loading loading-bars"></div>
+    </div>
+    <img
+        class="gif-image z-10"
+        src="{{ url }}"
+        alt="The clip is loading..."
+    />
+{% endif %}

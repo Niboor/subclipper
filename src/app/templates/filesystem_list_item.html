@@ -1,0 +1,99 @@
+{% set relative_path = full_path.relative_to(root_path) %}
+{% set is_root = relative_path.name == '' %}
+{% set is_root_child = (relative_path.parts|length) == 1  %}
+{% set open_by_default = is_root %}
+<li
+    id="id-{{ encode_id(relative_path.__str__()) }}"
+    class="h-full overflow-auto"
+    name="video"
+    value=""
+    {% if is_root %}
+    hx-ext="sse"
+    sse-connect="/scan_status_sse"
+    {% endif %}
+    hx-indicator=""
+>
+    {% if full_path.is_file() %}
+    <div
+        class="flex flex-row justify-between"
+        hx-get="/{{ relative_path }}"
+        hx-target="main"
+        hx-push-url="true"
+        hx-trigger="click"
+    >
+        <div class="flex flex-row gap-2">
+            {% include "icons/document.html" %}
+            <a
+                class="{{ 'menu-active' if request.args.get('video') == relative_path else '' }}"
+            >
+                {{ relative_path.name }}
+            </a>
+        </div>
+        <div
+            class="flex flex-row items-center gap-2"
+            sse-swap="{{ relative_path }}"
+            hx-push-url="false"
+            hx-get="/scan_status/{{ relative_path }}"
+            {% if open_by_default or is_root_child %}
+            hx-trigger="load"
+            {% else %}
+            hx-trigger="click once from:#id-{{ encode_id(relative_path.parent.__str__()) }}"
+            {% endif %}
+            hx-target="this"
+        >
+            <span class="skeleton skeleton-text italic">Getting scan status...</span>
+        </div>
+    </div>
+    {% else %}
+    <details
+        {% if open_by_default %}
+        open
+        {% endif %}
+    >
+        <summary class="flex">
+            <div class="w-full flex flex-row justify-between px-4">
+                <div class="flex flex-row gap-4 items-center">
+                    <div class="tooltip tooltip-right" data-tip="Search in this directory">
+                        <button
+                            class="btn btn-sm btn-circle btn-ghost p-0"
+                            hx-get="/{{ relative_path }}"
+                            hx-target="main"
+                            hx-push-url="true"
+                            hx-ext="preserve-params"
+                            preserve-params="false"
+                        >
+                            {% include "icons/folder-open.html" %}
+                        </button>
+                    </div>
+                    <div>
+                        {{ relative_path.name }}/
+                    </div>
+                    {% if open_by_default %}
+                    <div class="italic text-sm">All Files</div>
+                    {% endif %}
+                </div>
+                <div
+                    class="flex flex-row gap-2 items-center italic text-neutral-content text-xs"
+                    sse-swap="{{ relative_path }}"
+                    hx-get="/scan_status/{{ relative_path }}"
+                    {% if open_by_default or is_root_child %}
+                    hx-trigger="load"
+                    {% else %}
+                    hx-trigger="click once from:#id-{{ encode_id(relative_path.parent.__str__()) }}"
+                    {% endif %}
+                >
+                    <span class="loading loading-dots loading-xs"></span>
+                    <span class="italic text-neutral-content text-xs">Getting scan status...</span>
+                </div>
+            </div>
+        </summary>
+        <ul>
+            {% for child in full_path.iterdir() %}
+            {% with full_path=child, root_path=root_path %}
+                {% include "filesystem_list_item.html" %}
+            {% endwith %}
+            {% endfor %}
+        </ul>
+    </details>
+    {% endif %}
+</li>
