@@ -21,7 +21,7 @@ class SubtitleDatabase(pykka.ThreadingActor):
         self.conn: duckdb.DuckDBPyConnection
 
     def on_start(self) -> None:
-        self.conn = duckdb.connect(self.db_path) if self.db_path != "" else duckdb.connect("my_db.duckdb")
+        self.conn = duckdb.connect(self.db_path) if self.db_path != "" else duckdb.connect()
 
         cursor = self.conn.cursor()
 
