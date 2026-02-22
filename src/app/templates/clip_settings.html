@@ -8,7 +8,7 @@
             hx-get="/sub_data/{{ sub['prv'] }}"
             hx-target="#subtitle-settings"
             hx-on::before-request='saveCurrentClipState("{{ sub.id }}")''
-            hx-on::after-swap='updateBtnClass(this, {{ sub["prv"] | tojson }})'
+            hx-on::after-swap='updateBtnClass(this, {{ sub.get("prv") | tojson }})'
             {% if not sub.prv %}
             disabled
             {% endif %}
@@ -25,7 +25,7 @@
             hx-get="/sub_data/{{ sub['nxt'] }}"
             hx-target="#subtitle-settings"
             hx-on::before-request='saveCurrentClipState("{{ sub.id }}")''
-            hx-on::after-swap='updateBtnClass(this, {{ sub["nxt"] | tojson }})'
+            hx-on::after-swap='updateBtnClass(this, {{ sub.get("nxt") | tojson }})'
             {% if not sub.nxt %}
             disabled
             {% endif %}
