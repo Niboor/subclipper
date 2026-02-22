@@ -270,6 +270,7 @@ def render_sub(subtitle_id, partial_template, partial_key):
         return cached_render_template(
             partial_template,
             **{partial_key: sub_data},
+            settings=get_default_settings(),
             errs=None
         )
 
@@ -289,9 +290,8 @@ def sub_form(subtitle_id: str):
 def sub_data(subtitle_id: str):
     return render_sub(subtitle_id, partial_template="clip_settings.html", partial_key="sub")
 
-@bp.route("/default_settings")
 def get_default_settings():
-    settings = {
+    return {
         'crop': False,
         'resolution': 200,
         'font_name': str(config.font_name),
@@ -301,15 +301,25 @@ def get_default_settings():
         'boomerang': False
     }
 
-    return cached_render_template("global_settings.html", settings=settings)
+def get_err_settings(clip_settings: ClipSettings):
+    return {
+        'crop': clip_settings.crop,
+        'resolution': clip_settings.resolution,
+        'font_name': str(config.font_name),
+        'font_size': clip_settings.font_size,
+        'caption': clip_settings.caption,
+        'colour': clip_settings.colour,
+        'boomerang': clip_settings.boomerang,
+        'format': clip_settings.format
+    }
 
 @bp.route("/gif_view")
 def get_gif_view():
-    _, settings = create_clip_settings_from_request()
+    subs, settings = create_clip_settings_from_request()
 
     errors = settings.validate()
     if errors:
-        resp = cached_render_template("settings.html", errs=errors, sub=settings.__dict__)
+        resp = cached_render_template("settings.html", errs=errors, settings=get_err_settings(settings), sub=subs[0].__dict__)
         resp.headers['HX-Reswap'] = 'outerHTML'
         return resp, 400
 

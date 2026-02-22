@@ -10,6 +10,7 @@
     hx-replace-url="false"
     hx-vals='{"subtitle_id": "{{ sub.id }}", "video_id": "{{ sub.video_id }}"}'
     hx-target="#gif-view"
+    hx-target-4*="this"
     hx-swap="innerHTML"
     hx-indicator="#generate-gif-button"
 >
@@ -19,12 +20,114 @@
         {% endwith %}
     </div>
 
-    <div
-        id="global-settings"
-        hx-get="/default_settings"
-        hx-trigger="load once"
-        hx-target="this"
-    ></div>
+    <div class="flex flex-row justify-between gap-4">
+        <fieldset>
+            <legend class="fieldset-legend">Resolution</legend>
+            <input
+                class="input {{ 'input-error' if errs is not none and 'resolution' in errs else '' }}"
+                name="resolution"
+                type="number"
+                value="{{ settings.resolution }}"
+            />
+            {% if errs is not none and 'resolution' in errs %}
+                <div class="text-error">{{ errs['resolution'] }}</div>
+            {% endif %}
+        </fieldset>
+        <fieldset>
+            <legend class="fieldset-legend">Font size</legend>
+            <input
+                class="input {{ 'input-error' if errs is not none and 'font_size' in errs else '' }}"
+                name="font_size"
+                type="number"
+                value="{{ settings.font_size }}"
+            />
+            {% if errs is not none and 'font_size' in errs %}
+                <div class="text-error">{{ errs['font_size'] }}</div>
+            {% endif %}
+        </fieldset>
+    </div>
+    <div class="flex flex-row justify-between gap-4">
+        <fieldset>
+            <legend class="fieldset-legend">Square (crop)</legend>
+            <input
+                class="checkbox"
+                name="crop"
+                type="checkbox"
+                {% if settings.crop %}
+                checked
+                {% endif %}
+            />
+        </fieldset>
+        <fieldset>
+            <legend class="fieldset-legend">Boomerang (loop)</legend>
+            <input
+                class="checkbox"
+                name="boomerang"
+                type="checkbox"
+                {% if settings.boomerang %}
+                checked
+                {% endif %}
+            />
+        </fieldset>
+        <fieldset>
+            <legend class="fieldset-legend">Better colours</legend>
+            <input
+                class="checkbox transition"
+                name="colour"
+                type="checkbox"
+                id="gifColours"
+                {% if settings.colour %}
+                checked
+                {% endif %}
+            />
+        </fieldset>
+    </div>
+    <fieldset class="flex gap-3">
+        <legend class="fieldset-legend">Select Format</legend>
+
+        <label class="flex-1">
+            <input
+                id="webpRadio"
+                type="radio"
+                name="format"
+                value="webp"
+                class="peer hidden"
+                {% if settings.format == 'webp' or settings.format is not defined %}
+                checked
+                {% endif %}
+            />
+            <div class="w-full btn not-peer-checked:btn-outline peer-checked:btn-primary not-peer-checked:hover:bg-base-200 not-peer-checked:hover:border-inherit">
+                WEBP
+            </div>
+        </label>
+
+        <label class="flex-1">
+            <input
+                id="gifRadio"
+                type="radio"
+                name="format"
+                value="gif"
+                class="peer hidden"
+                {% if settings.format == 'gif' %}
+                checked
+                {% endif %}
+            />
+            <div class="w-full btn not-peer-checked:btn-outline peer-checked:btn-primary not-peer-checked:hover:bg-base-200 not-peer-checked:hover:border-inherit">
+                GIF
+            </div>
+        </label>
+    </fieldset>
+    <fieldset>
+        <legend class="fieldset-legend">Caption</legend>
+        <textarea
+            class="textarea w-full {{ 'input-error' if errs is not none and 'caption' in errs else '' }}"
+            name="caption"
+            type="text"
+        >{{ settings.caption }}</textarea>
+        {% if errs is not none and 'caption' in errs %}
+            <div class="text-error">{{ errs['caption'] }}</div>
+        {% endif %}
+    </fieldset>
 
     <button
         id="generate-gif-button"
@@ -41,3 +144,29 @@
     <div id="saved-clips" style="display: none;"></div>
 </form>
 {% endif %}
+
+{% block scripts %}
+    <script>
+        document.addEventListener('htmx:afterSettle', (evt) => {
+
+            // Prevents some errors being thrown in the console
+            if (!document.getElementById('webpRadio')) return;
+
+            const webpRadio  = document.getElementById('webpRadio')
+            const gifRadio   = document.getElementById('gifRadio')
+            const gifColours = document.getElementById('gifColours')
+
+            function toggleDisabled() {
+                gifColours.disabled = webpRadio.checked
+            }
+
+            // Initial state
+            toggleDisabled()
+
+            // Add change event listeners
+            webpRadio.addEventListener('change', toggleDisabled)
+            gifRadio.addEventListener('change', toggleDisabled)
+
+        })
+    </script>
+{% endblock %}
