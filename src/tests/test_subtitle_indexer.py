@@ -11,7 +11,7 @@ samples_dir = Path(__file__).parent.parent / "samples"
 
 @pytest.fixture(scope="session")
 def subtitle_indexer():
-    indexer = SubtitleIndexer(samples_dir, "")
+    indexer = SubtitleIndexer(samples_dir, "", None)
     for (path, progress) in indexer.on_scanning_progress():
         if path == Path(".") and progress == 1.0:
             yield indexer
@@ -42,12 +42,12 @@ def test_find_subtitle(subtitle_indexer):
     subtitle_id = encode_id(f"sample.mp4/0")
     subtitle = subtitle_indexer.find_subtitle(subtitle_id)
     assert subtitle is not None
-    assert subtitle.text == "Initializing test sequence alpha."
+    assert subtitle.text[0] == "Initializing test sequence alpha."
 
 @pytest.mark.timeout(5)
 def test_search_subtitles_from_root(subtitle_indexer):
-    
+
     for path in [".", "subfolder"]:
         subtitles = subtitle_indexer.search_subtitles(path, "initializing", 0, None)
         assert len(subtitles) > 0
-        assert len([subtitle for subtitle in subtitles if subtitle.text == "Initializing test sequence alpha."]) > 0
+        assert len([subtitle for subtitle in subtitles if subtitle.text[0] == "Initializing test sequence alpha."]) > 0

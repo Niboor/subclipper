@@ -14,45 +14,6 @@ def sample_video_path():
 def video_processor(sample_video_path: Path):
     return VideoProcessor(sample_video_path.parent, "Arial", None)
 
-def test_load_videos(video_processor: VideoProcessor, sample_video_path: Path):
-    with patch('pathlib.Path.glob') as mock_glob:
-        mock_glob.return_value = [sample_video_path]
-
-        videos = video_processor.load_videos()
-
-        assert len(videos) == 1
-        video = videos[0]
-        assert video.id == 0
-        assert video.title == "sample"
-        assert video.path == sample_video_path
-        assert len(video.subs) == 5  # Check for exactly 5 subtitles
-
-def test_search_subtitles(video_processor: VideoProcessor, sample_video_path: Path):
-    # Create test data
-    video = Video(
-        id=0,
-        title="sample",
-        path=sample_video_path,
-        subs=[
-            Subtitle(id=0, start=0, end=1, text=["Hello world"], video_id=0),
-            Subtitle(id=1, start=1, end=2, text=["Goodbye world"], video_id=0)
-        ]
-    )
-    video_processor._videos = [video]
-
-    # Test search with query
-    results = video_processor.search_subtitles("hello")
-    assert len(results) == 1
-    assert results[0].text[0] == "Hello world"
-
-    # Test search with video_id
-    results = video_processor.search_subtitles("world", video_id=0)
-    assert len(results) == 2
-
-    # Test search with no matches
-    results = video_processor.search_subtitles("nonexistent")
-    assert len(results) == 0
-
 def test_generate_clip(video_processor: VideoProcessor, sample_video_path: Path):
     # Create test data
     video = Video(

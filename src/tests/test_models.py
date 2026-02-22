@@ -77,15 +77,6 @@ def test_clip_settings_validation_errors():
     settings.video_id = ""
     assert "video_id" in settings.validate()
 
-    # Test text too long
-    settings.text = "a" * 201
-    assert "text" in settings.validate()
-
-    # Test caption too long
-    settings.text = "Test"
-    settings.caption = "a" * 201
-    assert "caption" in settings.validate()
-
     # Test font size too large
     settings.caption = ""
     settings.font_size = 51

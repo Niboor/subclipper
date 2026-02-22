@@ -64,4 +64,4 @@ class VideoProcessor:
             return None, err
         except Exception as e:
             logger.exception("Failed to generate clip")
-            raise
+            return None, e
