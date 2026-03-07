@@ -379,7 +379,6 @@ def get_gif():
 @bp.route("/", defaults={'path': '.'})
 @bp.route("/<path:path>")
 def index(path: str):
-    representation = request.args.get("representation", "list", type=str)
     filter = request.args.get("filter", '', type=str)
     selected = request.args.get("selected", None, type=str)
     page = request.args.get("page", None, type=int)
@@ -397,22 +396,6 @@ def index(path: str):
             url=None,
             errs=None,
             single_show_name=config.single_show_name,
-        )
-    elif representation == "timeline" and path_is_file:
-
-        subtitles = config.subtitle_indexer.get_video_subtitles(path)
-
-        template = "root.html" if hx_request is None else "episode_timeline.html"
-
-        return cached_render_template(
-            template,
-            path=path,
-            subs_data=[],
-            settings=get_default_settings(),
-            errs=None,
-            single_show_name=config.single_show_name,
-
-            subtitles=subtitles,
         )
     else:
         page = page or 0
