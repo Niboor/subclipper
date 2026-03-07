@@ -125,10 +125,10 @@ export class DualHandleSlider extends LitElement {
   }
 
   handleFormData({ formData }: FormDataEvent) {
-    formData.append(`start`, this.currentStart.toString())
-    formData.append(`end`, this.currentEnd.toString())
-    formData.append(`original_start`, this.originalStart.toString())
-    formData.append(`original_end`, this.originalEnd.toString())
+    formData.append(`clips[${this.id}][start_time]`, this.currentStart.toString())
+    formData.append(`clips[${this.id}][end_time]`, this.currentEnd.toString())
+    formData.append(`clips[${this.id}][original_start_time]`, this.originalStart.toString())
+    formData.append(`clips[${this.id}][original_end_time]`, this.originalEnd.toString())
   }
 
   connectedCallback(): void {
@@ -197,7 +197,7 @@ export class DualHandleSlider extends LitElement {
               id="startInput"
               type="number"
               step=${this.step}
-              value=${this.currentStart.toFixed(2)}
+              value=${this.currentStart}
               @change=${(e: Event) =>
                 this.updateFromInput(
                   "start",
@@ -230,7 +230,7 @@ export class DualHandleSlider extends LitElement {
               id="endInput"
               type="number"
               step=${this.step}
-              value=${this.currentEnd.toFixed(2)}
+              value=${this.currentEnd}
               @change=${(e: Event) =>
                 this.updateFromInput(
                   "end",

@@ -5,6 +5,7 @@ from src.core.video_processor import VideoProcessor
 from src.core.models import Video, Subtitle, ClipSettings, VideoScanStatus
 from src.utils.id_encoding import encode_id
 from sub2clip.subtitles import Subtitle as SSubtitle
+import tempfile
 
 @pytest.fixture
 def sample_video_path():
@@ -12,7 +13,8 @@ def sample_video_path():
 
 @pytest.fixture
 def video_processor(sample_video_path: Path):
-    return VideoProcessor(sample_video_path.parent, "Arial", None)
+    tmp_thumbnail_dir = Path(tempfile.mkdtemp())
+    return VideoProcessor(sample_video_path.parent, tmp_thumbnail_dir, "Arial", [])
 
 def test_generate_clip(video_processor: VideoProcessor, sample_video_path: Path):
     # Create test data

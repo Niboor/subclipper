@@ -5,6 +5,7 @@ import sys
 from typing import TypeVar
 from ..core.video_processor import VideoProcessor
 from ..core.subtitle_indexer import SubtitleIndexer
+import tempfile
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +18,7 @@ class Config:
         ).decode().strip()
 
         self.search_path = Path(self._get_required_env('SEARCH_PATH'))
+        self.thumbnail_path = Path(self._get_optional_env('THUMBNAIL_PATH', tempfile.mkdtemp()))
         self.db_path = self._get_optional_env('DB_PATH', '')
         self.default_page_length = int(self._get_optional_env('DEFAULT_PAGE_LENGTH', '50'))
         self.font_name = font
@@ -47,5 +49,5 @@ class Config:
     def video_processor(self):
         """Get the VideoProcessor instance, creating it if necessary."""
         if self._video_processor is None:
-            self._video_processor = VideoProcessor(self.search_path, self.font_name, self.languages)
+            self._video_processor = VideoProcessor(self.search_path, self.thumbnail_path, self.font_name, self.languages)
         return self._video_processor

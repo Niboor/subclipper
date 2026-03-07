@@ -7,6 +7,7 @@ import os
 import duckdb
 import pykka
 import math
+import hashlib
 
 from sub2clip.sub2clip import (extract_subs, extract_subs_by_language)
 from .models import Video, VideoScanStatus, Subtitle
@@ -38,8 +39,8 @@ class SubtitleDatabase(pykka.ThreadingActor):
                 subtitle_id TEXT PRIMARY KEY,
                 video_id TEXT NOT NULL,
                 text TEXT NOT NULL,
-                start_seconds REAL NOT NULL,
-                end_seconds REAL NOT NULL,
+                start_time BIGINT NOT NULL,
+                end_time BIGINT NOT NULL,
                 prv_subtitle TEXT,
                 nxt_subtitle TEXT,
                 FOREIGN KEY(video_id) REFERENCES videos(video_id)
@@ -81,7 +82,7 @@ class SubtitleDatabase(pykka.ThreadingActor):
         subs = [Subtitle(
             id=subtitle_id,
             video_id=video_id,
-            text=text.split('\n'),
+            text=text,
             start=start,
             end=end,
             prv_id=prv_id,
@@ -100,7 +101,7 @@ class SubtitleDatabase(pykka.ThreadingActor):
                 return Subtitle(
                     id=subtitle_id,
                     video_id=video_id,
-                    text=text.split('\n'),
+                    text=text,
                     start=start,
                     end=end,
                     prv_id=prv_id,
@@ -113,6 +114,22 @@ class SubtitleDatabase(pykka.ThreadingActor):
             return None
         finally:
             cursor.close()
+
+    def get_video_subtitles(self, video_id: str) -> List[Subtitle]:
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT * FROM subtitles WHERE video_id = ?", [video_id])
+        rows = cursor.fetchall()
+        subs = [Subtitle(
+            id=subtitle_id,
+            video_id=video_id,
+            text=text,
+            start=start,
+            end=end,
+            prv_id=prv_id,
+            nxt_id=nxt_id,
+        ) for (subtitle_id, video_id, text, start, end, prv_id, nxt_id) in rows]
+        cursor.close()
+        return subs
 
     def get_video(self, video_id: str) -> Optional[Video]:
         cursor = self.conn.cursor()
@@ -143,8 +160,8 @@ class SubtitleDatabase(pykka.ThreadingActor):
         cursor.begin()
         for subtitle in subtitles:
             cursor.execute(
-                "INSERT OR REPLACE INTO subtitles (subtitle_id, video_id, text, start_seconds, end_seconds, prv_subtitle, nxt_subtitle) VALUES (?,?,?,?,?,?,?)",
-                [subtitle.id, subtitle.video_id, '\n'.join(subtitle.text), subtitle.start_s, subtitle.end_s, subtitle.prv_id, subtitle.nxt_id])
+                "INSERT OR REPLACE INTO subtitles (subtitle_id, video_id, text, start_time, end_time, prv_subtitle, nxt_subtitle) VALUES (?,?,?,?,?,?,?)",
+                [subtitle.id, subtitle.video_id, subtitle.text, subtitle.start, subtitle.end, subtitle.prv_id, subtitle.nxt_id])
         cursor.commit()
         self.conn.commit()
         cursor.close()
@@ -224,16 +241,18 @@ class SubtitleScanner(pykka.ThreadingActor):
 
     def _extract_subtitles(self, video_id: Path) -> List[Subtitle]:
         """Extract subtitles from a video file."""
-        absolute_video_path = self.root_path.joinpath(video_id).__str__()
+        absolute_video_path = self.root_path.joinpath(video_id)
         try:
             logger.debug(f"Extracting subtitles from {video_id}")
             langs = [lang.strip().lower() for lang in self.languages.split(',')] if self.languages else None
             subtitles, ok = extract_subs_by_language(absolute_video_path, langs) if langs else extract_subs(absolute_video_path)
+            # Significantly reduces id length of subtitle while remaining unique per video
+            video_id_md5 = hashlib.md5(video_id.__str__().encode("utf-8")).hexdigest()[0:8]
             if ok:
                 return [
                     Subtitle.from_subtitle(
                         sub,
-                        id=encode_id(f"{video_id}/{idx}"),
+                        id=encode_id(f"{video_id_md5}/{idx}"),
                         prv_id=encode_id(f"{video_id}/{idx-1}") if idx > 0 else '',
                         nxt_id=encode_id(f"{video_id}/{idx+1}") if idx < len(subtitles)-1 else '',
                         video_id=video_id.__str__()
@@ -291,6 +310,9 @@ class SubtitleIndexer():
 
     def find_subtitle(self, subtitle_id: str) -> Optional[Subtitle]:
         return self.db.find_subtitle(subtitle_id).get()
+    
+    def get_video_subtitles(self, video_id: str):
+        return self.db.get_video_subtitles(video_id).get()
 
     def scan(self, path: Path):
         raise Exception("not implemented")

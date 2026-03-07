@@ -17,7 +17,7 @@
     hx-boost="true"
     hx-ext="response-targets, sse"
     hx-indicator="#generic-loading-message"
-    class="relative h-screen w-full flex flex-col"
+    class="relative h-screen w-full flex flex-col box-content"
 >
     <div
         id="generic-loading-message"
@@ -89,7 +89,7 @@
         <div class="skeleton w-full h-full bg-base-200"></div>
     </main>
     <div id="modal-container">
-        {% with sub_data=sub_data, errs=errs %}
+        {% with subs_data=subs_data, settings=settings, errs=errs %}
             {% include "tweak_modal.html" %}
         {% endwith %}
     </div>
