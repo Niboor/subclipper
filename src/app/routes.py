@@ -10,6 +10,7 @@ import time
 import os
 from collections.abc import Callable
 from itertools import chain
+from returns.result import Failure, Success
 
 import flask
 from jinja2 import Template
@@ -307,10 +308,14 @@ def thumbnail(subtitle_id: str):
     subtitle = config.subtitle_indexer.find_subtitle(subtitle_id)
     if subtitle is None:
         return f"Subtitle with id {subtitle_id} not found", 404
-    path, err = config.video_processor.get_thumbnail(subtitle, resolution=resolution)
-    if err is not None or path is None:
-        return f"{err}", 500
-    return send_from_directory(path.parent, path.name)
+    path = config.video_processor.get_thumbnail(subtitle, resolution=resolution)
+    match path:
+        case Failure(err):
+            return f"{err}", 500
+        case Success(path):
+            return send_from_directory(path.parent, path.name)
+        case _:
+            raise Exception("unreachable")
 
 def get_default_settings():
     return {
@@ -356,25 +361,28 @@ def get_gif_view():
 def get_gif():
     subs, settings = create_clip_settings_from_request()
 
-    output_path, error = config.video_processor.generate_clip(settings, subs)
-    if error:
-        logger.warning(f"Failed to generate clip: {error}")
-        return error, 500
-
-    try:
-        response = send_file(output_path, mimetype=f'image/{settings.format}')
-        response.headers['Cache-Control'] = 'public, max-age=86400'
-        return response
-    finally:
-        # Clean up the temporary directory and its contents
-        if output_path and output_path.exists():
-            tmp_dir = output_path.parent
+    output_path = config.video_processor.generate_clip(settings, subs)
+    match output_path:
+        case Failure(error):
+            logger.warning(f"Failed to generate clip: {error}")
+            return error, 500
+        case Success(output_path):
             try:
-                output_path.unlink()
-                (tmp_dir / 'clip.mp4').unlink(missing_ok=True)
-                tmp_dir.rmdir()
-            except Exception as e:
-                logger.warning(f"Failed to clean up temporary files: {e}")
+                response = send_file(output_path, mimetype=f'image/{settings.format}')
+                response.headers['Cache-Control'] = 'public, max-age=86400'
+                return response
+            finally:
+                # Clean up the temporary directory and its contents
+                if output_path and output_path.exists():
+                    tmp_dir = output_path.parent
+                    try:
+                        output_path.unlink()
+                        (tmp_dir / 'clip.mp4').unlink(missing_ok=True)
+                        tmp_dir.rmdir()
+                    except Exception as e:
+                        logger.warning(f"Failed to clean up temporary files: {e}")
+        case _:
+            raise Exception("unreachable")
 
 @bp.route("/", defaults={'path': '.'})
 @bp.route("/<path:path>")

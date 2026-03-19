@@ -29,7 +29,7 @@ def test_subtitle_creation():
 def test_clip_settings_validation():
     settings = ClipSettings(
         start_time=0.0,
-        end_time=5.0,
+        end_time=5000,
         original_start_time=0.0,
         original_end_time=5.0,
         crop=False,
@@ -47,8 +47,8 @@ def test_clip_settings_validation():
 def test_clip_settings_validation_errors():
     # Test end time before start time
     settings = ClipSettings(
-        start_time=5.0,
-        end_time=0.0,
+        start_time=5000,
+        end_time=0,
         original_start_time=5.0,
         original_end_time=0.0,
         crop=False,
@@ -64,7 +64,7 @@ def test_clip_settings_validation_errors():
     assert "end" in settings.validate()
 
     # Test clip too long
-    settings.end_time = 16.0  # 16.0 - 5.0 = 11.0 seconds, which is too long
+    settings.end_time = 16000  # 16.0 - 5.0 = 11.0 seconds, which is too long
     assert "end" in settings.validate()
 
     # Test invalid resolution

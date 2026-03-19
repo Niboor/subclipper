@@ -47,6 +47,16 @@ class Subtitle(SSubtitle):
             nxt_id=nxt_id
         )
     
+    def to_subtitle(self) -> SSubtitle:
+        return SSubtitle(
+            start=self.start,
+            end=self.end,
+            text=self.text,
+            delay=self.delay,
+            nxt=self.nxt,
+            prv=self.prv,
+        )
+    
     def to_sub_data(self, active: bool = False) -> dict[str, Any]:
         return {
             'id': self.id,

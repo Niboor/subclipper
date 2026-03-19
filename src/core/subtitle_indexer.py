@@ -11,6 +11,7 @@ import hashlib
 
 from sub2clip.sub2clip import (extract_subs, extract_subs_by_language)
 from .models import Video, VideoScanStatus, Subtitle
+from returns.result import Result, Failure, Success
 
 logger = logging.getLogger(__name__)
 
@@ -244,22 +245,26 @@ class SubtitleScanner(pykka.ThreadingActor):
         absolute_video_path = self.root_path.joinpath(video_id)
         try:
             logger.debug(f"Extracting subtitles from {video_id}")
-            langs = [lang.strip().lower() for lang in self.languages.split(',')] if self.languages else None
-            subtitles, ok = extract_subs_by_language(absolute_video_path, langs) if langs else extract_subs(absolute_video_path)
+            langs = [lang.strip().lower() for lang in self.languages] if self.languages else None
+            subtitles = extract_subs_by_language(absolute_video_path, langs) if langs else extract_subs(absolute_video_path)
             # Significantly reduces id length of subtitle while remaining unique per video
             video_id_md5 = hashlib.md5(video_id.__str__().encode("utf-8")).hexdigest()[0:8]
-            if ok:
-                return [
-                    Subtitle.from_subtitle(
-                        sub,
-                        id=encode_id(f"{video_id_md5}/{idx}"),
-                        prv_id=encode_id(f"{video_id}/{idx-1}") if idx > 0 else '',
-                        nxt_id=encode_id(f"{video_id}/{idx+1}") if idx < len(subtitles)-1 else '',
-                        video_id=video_id.__str__()
-                    )
-                    for idx, sub in enumerate(subtitles)
-                ]
-            raise Exception(subtitles)
+            match subtitles:
+                case Success(subtitles):
+                    return [
+                        Subtitle.from_subtitle(
+                            sub,
+                            id=encode_id(f"{video_id_md5}/{idx}"),
+                            prv_id=encode_id(f"{video_id}/{idx-1}") if idx > 0 else '',
+                            nxt_id=encode_id(f"{video_id}/{idx+1}") if idx < len(subtitles)-1 else '',
+                            video_id=video_id.__str__()
+                        )
+                        for idx, sub in enumerate(subtitles)
+                    ]
+                case Failure(err):
+                    raise Exception(err)
+                case _:
+                    raise Exception("unreachable")
         except Exception as e:
             logger.exception(f"Failed to extract subtitles from {video_id}")
             raise

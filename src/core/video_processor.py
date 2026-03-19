@@ -6,6 +6,7 @@ import os
 import time
 from contextlib import contextmanager
 from ..utils.id_encoding import encode_id
+from returns.result import Result, Success, Failure
 
 from .models import Video, Subtitle, ClipSettings
 from sub2clip.sub2clip import generate
@@ -22,13 +23,13 @@ class VideoProcessor:
         self.languages = languages
         logger.info(f"Initialized VideoProcessor with search_path: {search_path}, font_name: {font_name}, language filter: {languages}")
 
-    def generate_clip(self, settings: ClipSettings, subs: list[SSubtitle]) -> Tuple[Optional[Path], Optional[str]]:
+    def generate_clip(self, settings: ClipSettings, subs: list[Subtitle]) -> Result[Path, str]:
         """Generate a video clip with the given settings."""
         try:
             logger.debug(f"Starting clip generation with settings: {settings}")
             errors = settings.validate()
             if errors:
-                return None, str(errors)
+                return Failure(str(errors))
 
             # Create a temporary directory that won't be automatically cleaned up
             tmp_dir = Path(tempfile.mkdtemp())
@@ -56,32 +57,34 @@ class VideoProcessor:
                     end=end_time_ms,
                     text=settings.caption,
                 ) if settings.caption else None
+            
+            ssubs = [sub.to_subtitle() for sub in subs]
 
-            err, ok = generate(
+            err = generate(
                 clip_settings=clip_settings,
-                subtitles=subs,
+                subtitles=ssubs,
                 caption=caption
             )
-
-            if ok:
-                return output_path, None
-            return None, err
+            match err:
+                case Failure(err):
+                    return Failure(err)
+            return Success(output_path)
         except Exception as e:
             logger.exception("Failed to generate clip")
-            return None, e
+            return Failure(e.__str__())
         
-    def get_thumbnail(self, subtitle: Subtitle, resolution: int=50) -> Tuple[Optional[Path], Optional[str]]:
+    def get_thumbnail(self, subtitle: Subtitle, resolution: int=50) -> Result[Path, str]:
         """Get the thumbnail for the given subtitle at the set resolution"""
 
         filename = f"thumbnail-{encode_id(subtitle.id).replace(".", "-")}-{resolution}.jpg"
         output_path = self.thumbnail_path / filename
 
         if output_path.exists():
-            return output_path, None
+            return Success(output_path)
         else:
             return self._generate_thumbnail(subtitle.video_id, subtitle.start, output_path, resolution=resolution)
         
-    def _generate_thumbnail(self, video_id: str, timestamp: int, output_path: Path, resolution: int=50) -> Tuple[Optional[Path], Optional[str]]:
+    def _generate_thumbnail(self, video_id: str, timestamp: int, output_path: Path, resolution: int=50) -> Result[Path, str]:
         """Generate the stillframe for the given timestamp"""
     
         clip_settings = SubSettings(
@@ -93,7 +96,9 @@ class VideoProcessor:
             resolution=resolution
         )
 
-        err, ok = generate(clip_settings, subtitles=[], thumbnail=True)
-        if ok:
-            return output_path, None
-        return None, err
+        err = generate(clip_settings, subtitles=[], thumbnail=True)
+        match err:
+            case Failure(err):
+                return Failure(err)
+            case _:
+                return Success(output_path)
