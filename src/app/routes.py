@@ -73,7 +73,6 @@ def create_clip_settings_from_request() -> tuple[list[Subtitle], ClipSettings]:
         start = round(float(clip['start_time']))
         end = round(float(clip['end_time']))
 
-        # TODO: What is this?
         if (idx > 0):
             prv = subs[-1].end
             if prv > start:

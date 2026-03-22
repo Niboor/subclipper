@@ -81,14 +81,15 @@ class SubtitleDatabase(pykka.ThreadingActor):
         cursor.execute(f"SELECT * FROM subtitles WHERE video_id LIKE ? AND text ILIKE ? LIMIT ?{ ' OFFSET ?' if offset is not None else '' }", [f"{search_subpath if search_subpath != '.' else ''}%", f"%{search_string}%", page_length, *([offset] if offset is not None else [])])
         rows = cursor.fetchall()
         subs = [Subtitle(
-            id=subtitle_id,
-            video_id=video_id,
-            text=text,
-            start=start,
-            end=end,
-            prv_id=prv_id,
-            nxt_id=nxt_id)
-            for (subtitle_id, video_id, text, start, end, prv_id, nxt_id) in rows]
+                id=subtitle_id,
+                video_id=video_id,
+                text=text,
+                start=start,
+                end=end,
+                prv_id=prv_id,
+                nxt_id=nxt_id
+            ) for (subtitle_id, video_id, text, start, end, prv_id, nxt_id) in rows
+        ]
         cursor.close()
         return subs
 
@@ -255,8 +256,8 @@ class SubtitleScanner(pykka.ThreadingActor):
                         Subtitle.from_subtitle(
                             sub,
                             id=encode_id(f"{video_id_md5}/{idx}"),
-                            prv_id=encode_id(f"{video_id}/{idx-1}") if idx > 0 else '',
-                            nxt_id=encode_id(f"{video_id}/{idx+1}") if idx < len(subtitles)-1 else '',
+                            prv_id=encode_id(f"{video_id_md5}/{idx-1}") if idx > 0 else '',
+                            nxt_id=encode_id(f"{video_id_md5}/{idx+1}") if idx < len(subtitles)-1 else '',
                             video_id=video_id.__str__()
                         )
                         for idx, sub in enumerate(subtitles)
