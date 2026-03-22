@@ -279,7 +279,7 @@ def sub_form(subtitle_id: str):
 def sub_data(subtitle_id: str):
     subs, settings = create_clip_settings_from_request()
 
-    sub_exists = len([sub for sub in subs if sub.id == subtitle_id]) > 0
+    sub_exists = any(sub.id == subtitle_id for sub in subs)
 
     if sub_exists:
         new_subs = subs
