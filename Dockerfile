@@ -32,4 +32,4 @@ RUN pip install -e .
 
 EXPOSE 8000
 
-CMD ["gunicorn", "src.app:create_app()", "--worker-class", "gevent", "--threads", "10", "--workers", "1", "--log-level", "debug", "-b", ":8000"]
+CMD ["gunicorn", "src.app:create_app()", "--worker-class", "gevent", "--threads", "10", "--workers", "1", "--log-level", "debug", "-b", ":8000", "--limit-request-line", "0"]

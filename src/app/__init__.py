@@ -3,6 +3,8 @@ from logging.config import dictConfig
 from pathlib import Path
 import os
 from ..utils.id_encoding import encode_id
+import time
+import datetime
 
 from ..utils.config import Config
 
@@ -38,5 +40,9 @@ def create_app():
     
     from .routes import bp
     app.register_blueprint(bp)
+
+    @app.template_filter('format_duration')
+    def format_duration(s):
+        return time.strftime('%H:%M:%S', time.gmtime(s))
     
     return app

@@ -1,9 +1,10 @@
 from __future__ import annotations
 from dataclasses import (dataclass, field)
 from pathlib import Path
-from typing import List, Optional, TypeVar
+from typing import Any, List, Optional, TypeVar
 from enum import Enum
 from sub2clip.subtitles import Subtitle as SSubtitle
+from ..utils.id_encoding import (decode_id, encode_id)
 
 class VideoScanStatus(Enum):
     UNSCANNED = 'UNSCANNED'
@@ -32,8 +33,8 @@ class Subtitle(SSubtitle):
     nxt_id: str = field(default="", compare=False)
 
     @classmethod
-    def from_subtitle(self, subtitle: SSubtitle, id, video_id, prv_id, nxt_id) -> Subtitle:
-        return self(
+    def from_subtitle(cls, subtitle: SSubtitle, id, video_id, prv_id, nxt_id) -> Subtitle:
+        return cls(
             start=subtitle.start,
             end=subtitle.end,
             text=subtitle.text,
@@ -45,6 +46,35 @@ class Subtitle(SSubtitle):
             prv_id=prv_id,
             nxt_id=nxt_id
         )
+    
+    def to_subtitle(self) -> SSubtitle:
+        return SSubtitle(
+            start=self.start,
+            end=self.end,
+            text=self.text,
+            delay=self.delay,
+            nxt=self.nxt,
+            prv=self.prv,
+        )
+    
+    def to_sub_data(self, active: bool = False) -> dict[str, Any]:
+        return {
+            'id': self.id,
+            'video_id': self.video_id,
+            'start_time': self.start,
+            'end_time': self.end,
+            'original_start_time': self.start,
+            'original_end_time': self.end,
+            'text': self.text,
+            'prv_id': self.prv_id,
+            'nxt_id': self.nxt_id,
+            'active': active,
+        }
+    
+    def get_ordering(self) -> int:
+        decoded_id = decode_id(self.id)
+        [*_, subtitle_id] = decoded_id.split("/")
+        return int(subtitle_id)
 
 @dataclass
 class ClipSettings:
@@ -68,7 +98,7 @@ class ClipSettings:
 
         if self.end_time <= self.start_time:
             errs['end'] = 'end time must be after start time'
-        if self.end_time - self.start_time > 10:
+        if self.end_time - self.start_time > 10000:
             errs['end'] = 'clip too long'
         if self.resolution < 50 or self.resolution > 1024:
             errs['resolution'] = 'resolution must be between 50 and 1024'

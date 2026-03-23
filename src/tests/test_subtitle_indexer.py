@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import List
 import pytest
 import os
+import hashlib
 
 from src.core.models import Video, Subtitle, ClipSettings, VideoScanStatus
 from src.core.subtitle_indexer import SubtitleIndexer
@@ -39,10 +40,11 @@ def test_not_get_nonexistant_video(subtitle_indexer):
 
 @pytest.mark.timeout(5)
 def test_find_subtitle(subtitle_indexer):
-    subtitle_id = encode_id(f"sample.mp4/0")
+    video_id_md5 = hashlib.md5("sample.mp4".encode("utf-8")).hexdigest()[0:8]
+    subtitle_id = encode_id(f"{video_id_md5}/0")
     subtitle = subtitle_indexer.find_subtitle(subtitle_id)
     assert subtitle is not None
-    assert subtitle.text[0] == "Initializing test sequence alpha."
+    assert subtitle.text == "Initializing test sequence alpha."
 
 @pytest.mark.timeout(5)
 def test_search_subtitles_from_root(subtitle_indexer):
@@ -50,4 +52,4 @@ def test_search_subtitles_from_root(subtitle_indexer):
     for path in [".", "subfolder"]:
         subtitles = subtitle_indexer.search_subtitles(path, "initializing", 0, None)
         assert len(subtitles) > 0
-        assert len([subtitle for subtitle in subtitles if subtitle.text[0] == "Initializing test sequence alpha."]) > 0
+        assert len([subtitle for subtitle in subtitles if subtitle.text == "Initializing test sequence alpha."]) > 0

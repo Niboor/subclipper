@@ -1,13 +1,13 @@
 <closable-dialog
-    {% if sub_data is not none %}
+    {% if subs_data|length > 0 %}
         open
     {% endif %}
 >
     <div
         id="settings"
-        class="w-full overflow-auto flex md:flex-1 box-border"
+        class="w-full overflow-auto flex md:flex-1"
     >
-        {% with sub=sub_data, errs=errs %}
+        {% with subs_data=subs_data, settings=settings, errs=errs %}
             {% include "settings.html" %}
         {% endwith %}
     </div>

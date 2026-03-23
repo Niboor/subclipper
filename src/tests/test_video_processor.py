@@ -5,6 +5,9 @@ from src.core.video_processor import VideoProcessor
 from src.core.models import Video, Subtitle, ClipSettings, VideoScanStatus
 from src.utils.id_encoding import encode_id
 from sub2clip.subtitles import Subtitle as SSubtitle
+from returns.pipeline import is_successful
+from returns.result import Success, Failure
+import tempfile
 
 @pytest.fixture
 def sample_video_path():
@@ -12,7 +15,8 @@ def sample_video_path():
 
 @pytest.fixture
 def video_processor(sample_video_path: Path):
-    return VideoProcessor(sample_video_path.parent, "Arial", None)
+    tmp_thumbnail_dir = Path(tempfile.mkdtemp())
+    return VideoProcessor(sample_video_path.parent, tmp_thumbnail_dir, "Arial", [])
 
 def test_generate_clip(video_processor: VideoProcessor, sample_video_path: Path):
     # Create test data
@@ -41,16 +45,14 @@ def test_generate_clip(video_processor: VideoProcessor, sample_video_path: Path)
     )
 
     with patch('src.core.video_processor.VideoProcessor.generate_clip') as mock_generate_clip:
-        mock_generate_clip.return_value = (Path(), None)
-        output_path, error = video_processor.generate_clip(settings, [])
-        assert error is None
-        assert output_path is not None
+        mock_generate_clip.return_value = Success(Path())
+        output_path = video_processor.generate_clip(settings, [])
+        assert is_successful(output_path)
 
     # Test with invalid settings
     settings.video_id = "nonexistant"
-    output_path, error = video_processor.generate_clip(settings, [])
-    assert error is not None
-    assert output_path is None
+    output_path = video_processor.generate_clip(settings, [])
+    assert not is_successful(output_path)
 
 def test_generate_clip_error_handling(video_processor: VideoProcessor, sample_video_path: Path):
     # Create test data
@@ -78,7 +80,7 @@ def test_generate_clip_error_handling(video_processor: VideoProcessor, sample_vi
     )
 
     with patch('src.core.video_processor.VideoProcessor.generate_clip') as mock_generate_clip:
-        mock_generate_clip.return_value = (None, "Error generating video")
-        output_path, error = video_processor.generate_clip(settings, [])
-        assert error == "Error generating video"
-        assert output_path is None
+        mock_generate_clip.return_value = Failure("Error generating video")
+        output_path = video_processor.generate_clip(settings, [])
+        assert not is_successful(output_path)
+        assert output_path.failure() == "Error generating video"
