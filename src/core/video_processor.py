@@ -96,7 +96,7 @@ class VideoProcessor:
             resolution=resolution
         )
 
-        err = generate(clip_settings, subtitles=[], thumbnail=True)
+        err = generate(clip_settings, subtitles=None, thumbnail=True)
         match err:
             case Failure(err):
                 return Failure(err)
