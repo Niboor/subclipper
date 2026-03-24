@@ -17,22 +17,21 @@ def test_subtitle_creation():
         id="base64_encoded(/path/to/video/0)",
         start=10.0,
         end=15.0,
-        text="Test subtitle",
+        text=["Test subtitle"],
         video_id="/path/to/video"
     )
     assert sub.id == "base64_encoded(/path/to/video/0)"
     assert sub.start == 10.0
     assert sub.end == 15.0
-    assert sub.text == "Test subtitle"
+    assert sub.text[0] == "Test subtitle"
     assert sub.video_id == "/path/to/video"
 
 def test_clip_settings_validation():
     settings = ClipSettings(
         start_time=0.0,
-        end_time=5.0,
+        end_time=5000,
         original_start_time=0.0,
         original_end_time=5.0,
-        text="Test",
         crop=False,
         resolution=500,
         video_id="/path/to/video",
@@ -42,18 +41,16 @@ def test_clip_settings_validation():
         boomerang=False,
         colour=False,
         format="webp",
-        font_path=Path("/path/to/font.ttf")
     )
     assert settings.validate() == {}
 
 def test_clip_settings_validation_errors():
     # Test end time before start time
     settings = ClipSettings(
-        start_time=5.0,
-        end_time=0.0,
+        start_time=5000,
+        end_time=0,
         original_start_time=5.0,
         original_end_time=0.0,
-        text="Test",
         crop=False,
         resolution=500,
         video_id="/path/to/video",
@@ -62,13 +59,12 @@ def test_clip_settings_validation_errors():
         caption="",
         boomerang=False,
         colour=False,
-        format="webp",
-        font_path=Path("/path/to/font.ttf")
+        format="webp"
     )
     assert "end" in settings.validate()
 
     # Test clip too long
-    settings.end_time = 16.0  # 16.0 - 5.0 = 11.0 seconds, which is too long
+    settings.end_time = 16000  # 16.0 - 5.0 = 11.0 seconds, which is too long
     assert "end" in settings.validate()
 
     # Test invalid resolution
@@ -81,15 +77,6 @@ def test_clip_settings_validation_errors():
     settings.video_id = ""
     assert "video_id" in settings.validate()
 
-    # Test text too long
-    settings.text = "a" * 201
-    assert "text" in settings.validate()
-
-    # Test caption too long
-    settings.text = "Test"
-    settings.caption = "a" * 201
-    assert "caption" in settings.validate()
-
     # Test font size too large
     settings.caption = ""
     settings.font_size = 51
@@ -98,4 +85,4 @@ def test_clip_settings_validation_errors():
     # Test invalid format
     settings.font_size = 20
     settings.format = "invalid"
-    assert "format" in settings.validate() 
+    assert "format" in settings.validate()

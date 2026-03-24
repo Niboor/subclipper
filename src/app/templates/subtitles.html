@@ -15,18 +15,17 @@
                 {% for sub in subs %}
                     <li
                         id="id{{ sub.id }}"
-                        class="list-row hover:bg-base-200 cursor-pointer transition-colors target:bg-primary target:hover:bg-primary/50 items-center"
+                        class="list-row hover:bg-base-200 cursor-pointer transition-colors target:bg-primary target:hover:bg-primary/50 items-center box-content min-h-[50px]"
                         hx-get="/sub_form/{{ sub['id'] }}"
                         hx-target="#modal-container"
                         preserve-params="false"
                     >
+                        <img src="/thumbnail/{{ sub.id }}?resolution=50" class="min-w-[88px]" height="50" />
                         <div class="list-col-grow flex flex-col items-start">
                             <div class="flex flex-row gap-2">
                                 <div class="text-xs uppercase font-semibold opacity-60">{{ sub.video_id }}</div>
                             </div>
-                            <div>
-                                {{ sub.text }}
-                            </div>
+                            <div>{{ sub.text }}</div>
                         </div>
                         <div class="tooltip tooltip-left" data-tip="Locate this subtitle chronologically">
                             <button

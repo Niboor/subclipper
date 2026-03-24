@@ -73,8 +73,10 @@ export class DualHandleSlider extends LitElement {
 
       if (handle === "start") {
         this.currentStart = Math.min(time, this.currentEnd - this.step)
+        this.setAttribute('start', this.currentStart.toString());
       } else {
         this.currentEnd = Math.max(time, this.currentStart + this.step)
+        this.setAttribute('end', this.currentEnd.toString());
       }
       this.requestUpdate();
     };
@@ -96,7 +98,7 @@ export class DualHandleSlider extends LitElement {
   private getRelativePosition(e: MouseEvent | TouchEvent): number {
 
     const track = this.sliderTrackRef.value
-    if(track === undefined) {
+    if (track === undefined) {
       return 0
     }
 
@@ -117,27 +119,28 @@ export class DualHandleSlider extends LitElement {
   reset() {
     this.currentStart = this.originalStart;
     this.currentEnd = this.originalEnd;
+    this.setAttribute('start', this.currentStart.toString());
+    this.setAttribute('end', this.currentEnd.toString());
     this.requestUpdate();
   }
 
   handleFormData({ formData }: FormDataEvent) {
-    formData.append(`start`, this.currentStart.toString())
-    formData.append(`end`, this.currentEnd.toString())
-    formData.append(`original_start`, this.originalStart.toString())
-    formData.append(`original_end`, this.originalEnd.toString())
+    formData.append(`clips[${this.id}][start_time]`, this.currentStart.toString())
+    formData.append(`clips[${this.id}][end_time]`, this.currentEnd.toString())
+    formData.append(`clips[${this.id}][original_start_time]`, this.originalStart.toString())
+    formData.append(`clips[${this.id}][original_end_time]`, this.originalEnd.toString())
   }
 
   connectedCallback(): void {
-      super.connectedCallback()
-      const root = this.getRootNode() as HTMLElement
-      const forms = Array.from(root.querySelectorAll(`form`))
-      const form = forms.find(form => form.contains(this))
-      if(form !== undefined) {
-          this.parentForm = form
-          this.parentFormEventHandler = this.handleFormData.bind(this)
-          form.addEventListener(`formdata`, this.parentFormEventHandler!)
-      }
-
+    super.connectedCallback()
+    const root = this.getRootNode() as HTMLElement
+    const forms = Array.from(root.querySelectorAll(`form`))
+    const form = forms.find(form => form.contains(this))
+    if (form !== undefined) {
+      this.parentForm = form
+      this.parentFormEventHandler = this.handleFormData.bind(this)
+      form.addEventListener(`formdata`, this.parentFormEventHandler!)
+    }
   }
 
   disconnectedCallback(): void {
@@ -162,7 +165,7 @@ export class DualHandleSlider extends LitElement {
              class="slider-range absolute -translate-y-1/4 top-0 h-6 bg-base-content rounded-full"
              style="left:calc(${startPos}% - 1rem); width:calc(${endPos - startPos}% + 2rem);"
           ></div>
-  
+
           <div
             class="slider-handle absolute top-1/2 -translate-y-3.5 -translate-x-1/2 cursor-pointer w-8 h-8 flex justify-center items-center"
             style="left:${startPos}%;"
@@ -194,7 +197,7 @@ export class DualHandleSlider extends LitElement {
               id="startInput"
               type="number"
               step=${this.step}
-              value=${this.currentStart.toFixed(2)}
+              value=${this.currentStart}
               @change=${(e: Event) =>
                 this.updateFromInput(
                   "start",
@@ -227,7 +230,7 @@ export class DualHandleSlider extends LitElement {
               id="endInput"
               type="number"
               step=${this.step}
-              value=${this.currentEnd.toFixed(2)}
+              value=${this.currentEnd}
               @change=${(e: Event) =>
                 this.updateFromInput(
                   "end",

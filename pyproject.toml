@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "subclipper"
+version = "0.1.0"
+description = "Video/subtitle processing web app"
+requires-python = ">=3.10"
+dependencies = [
+    "flask>=3.1.0",
+    "gunicorn>=23.0.0",
+    "gevent>=25.9.1",
+    "pykka>=4.4.1",
+    "duckdb>=1.4.4",
+    "sub2clip @ git+https://github.com/lpalinckx/sub2clip.git#v2.4.1#subdirectory=packages/sub2clip",
+    "returns>=0.26.0"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-timeout>=2.4.0"
+]
+
+[project.scripts]
+subclipper = "src.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["."]

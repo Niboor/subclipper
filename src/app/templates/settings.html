@@ -1,195 +1,217 @@
-{% if sub is none %}
+{% if sub_data is none %}
     <h2 class="text-lg text-base-content font-semibold w-full h-full flex flex-col justify-center items-center">
         Select a subtitle from the list and tweak it here...
     </h2>
 {% else %}
-    <form
-        class="w-full flex flex-col justify-between gap-2"
-        hx-get="/gif_view"
-        hx-push-url="false"
-        hx-replace-url="false"
-        hx-vals='{"subtitle_id": "{{ sub.id }}", "video_id": "{{ sub.video_id }}"}'
-        hx-target="#gif-view"
-        hx-target-4*="this"
-        hx-swap="innerHTML"
-        hx-indicator="#generate-gif-button"
-    >
+<form
+    class="w-full flex flex-col justify-between gap-2"
+    hx-get="/gif_view"
+    hx-push-url="false"
+    hx-replace-url="false"
+    {% if subs_data|length > 0 %}
+    hx-vals='{"video_id": "{{ (subs_data|first).video_id }}"}'
+    {% endif %}
+    hx-target="#gif-view"
+    hx-target-4*="this"
+    hx-swap="innerHTML"
+    hx-indicator="#generate-gif-button"
+    hx-include=".clip-settings"
+>
+    <div class="flex flex-col items-center">
+        <div role="tablist" class="tabs tabs-box">
+            <a
+                role="tab"
+                class="tab border border-dashed"
+                {% if subs_data|length > 0 %}
+                hx-get="/sub_data/{{ (subs_data|first).prv_id }}"
+                hx-trigger="click"
+                hx-target="#settings"
+                hx-swap="innerHTML"
+                hx-include="closest form"
+                {% endif %}
+            >
+                + Prev clip
+            </a>
+            {% for sub_data in subs_data %}
+            <a
+                role="tab"
+                class="tab {{ 'tab-active' if sub_data.active else '' }}"
+                hx-get="/sub_data/{{ sub_data.id }}"
+                hx-trigger="click"
+                hx-target="#settings"
+                hx-swap="innerHTML"
+                hx-include="closest form"
+            >
+                Clip {{ loop.index0+1 }}
+            </a>
+            {% endfor %}
+            <a
+                role="tab"
+                class="tab border border-dashed"
+                {% if subs_data|length > 0 %}
+                hx-get="/sub_data/{{ (subs_data|last).nxt_id }}"
+                hx-trigger="click"
+                hx-target="#settings"
+                hx-swap="innerHTML"
+                hx-include="closest form, .clip-settings"
+                {% endif %}
+            >
+                + Next clip
+            </a>
+        </div>
+    </div>
+    {% for sub_data in subs_data %}
+        {% with sub_data=sub_data %}
+            {% include "clip_settings.html" %}
+        {% endwith %}
+    {% endfor %}
+    <div class="flex flex-row justify-between gap-4">
         <fieldset>
-            <legend class="fieldset-legend">Subtitles</legend>
+            <legend class="fieldset-legend">Resolution</legend>
             <input
-                name="text"
-                type="text"
-                class="input w-full {{ 'input-error' if errs is not none and 'text' in errs else '' }}"
-                value="{{ sub.text }}"
+                class="input {{ 'input-error' if errs is not none and 'resolution' in errs else '' }}"
+                name="resolution"
+                type="number"
+                value="{{ settings.resolution }}"
             />
-            {% if errs is not none and 'text' in errs %}
-                <div class="validator-hint text-error">{{ errs['text'] }}</div>
+            {% if errs is not none and 'resolution' in errs %}
+                <div class="text-error">{{ errs['resolution'] }}</div>
             {% endif %}
         </fieldset>
-        <div class="flex flex-row justify-between gap-4">
-            <fieldset class="w-full">
-                <legend class="fieldset-legend flex items-center gap-2">
-                    Clip Timing
-                </legend>
-                <dual-handle-slider
-                    step="0.01"
-                    padding="10"
-                    start="{{ sub.start_time }}"
-                    end="{{ sub.end_time }}"
-                    originalStart="{{ sub.original_start_time }}"
-                    originalEnd="{{ sub.original_end_time }}"
-                    {% if errs is not none and 'start' in errs %}
-                    startError="{{ errs['start'] }}"
-                    {% endif %}
-                    {% if errs is not none and 'end' in errs %}
-                    endError="{{ errs['end'] }}"
-                    {% endif %}
-                />
-            </fieldset>
-        </div>
-        <div class="flex flex-row justify-between gap-4">
-            <fieldset>
-                <legend class="fieldset-legend">Resolution</legend>
-                <input
-                    class="input {{ 'input-error' if errs is not none and 'resolution' in errs else '' }}"
-                    name="resolution"
-                    type="number"
-                    value="{{ sub.resolution }}"
-                />
-                {% if errs is not none and 'resolution' in errs %}
-                    <div class="validator-hint text-error">{{ errs['resolution'] }}</div>
-                {% endif %}
-            </fieldset>
-            <fieldset>
-                <legend class="fieldset-legend">Font size</legend>
-                <input
-                    class="input {{ 'input-error' if errs is not none and 'font_size' in errs else '' }}"
-                    name="font_size"
-                    type="number"
-                    value="{{ sub.font_size }}"
-                />
-                {% if errs is not none and 'font_size' in errs %}
-                    <div class="validator-hint text-error">{{ errs['font_size'] }}</div>
-                {% endif %}
-            </fieldset>
-        </div>
-        <div class="flex flex-row justify-between gap-4">
-            <fieldset>
-                <legend class="fieldset-legend">Square (crop)</legend>
-                <input
-                    class="checkbox"
-                    name="crop"
-                    type="checkbox"
-                    {% if sub.crop %}
-                    checked
-                    {% endif %}
-                />
-            </fieldset>
-            <fieldset>
-                <legend class="fieldset-legend">Boomerang (loop)</legend>
-                <input
-                    class="checkbox"
-                    name="boomerang"
-                    type="checkbox"
-                    {% if sub.boomerang %}
-                    checked
-                    {% endif %}
-                />
-            </fieldset>
-            <fieldset>
-                <legend class="fieldset-legend">Better colours</legend>
-                <input
-                    class="checkbox transition"
-                    name="colour"
-                    type="checkbox"
-                    id="gifColours"
-                    {% if sub.colour %}
-                    checked
-                    {% endif %}
-                />
-            </fieldset>
-        </div>
-        <fieldset class="flex gap-3">
-            <legend class="fieldset-legend">Select Format</legend>
-
-            <label class="flex-1">
-                <input
-                    id="webpRadio"
-                    type="radio"
-                    name="format"
-                    value="webp"
-                    class="peer hidden"
-                    checked
-                />
-                <div class="w-full btn not-peer-checked:btn-outline peer-checked:btn-primary not-peer-checked:hover:bg-base-200 not-peer-checked:hover:border-inherit">
-                    WEBP
-                </div>
-            </label>
-
-            <label class="flex-1">
-                <input
-                    id="gifRadio"
-                    type="radio"
-                    name="format"
-                    value="gif"
-                    class="peer hidden"
-                />
-                <div class="w-full btn not-peer-checked:btn-outline peer-checked:btn-primary not-peer-checked:hover:bg-base-200 not-peer-checked:hover:border-inherit">
-                    GIF
-                </div>
-            </label>
-        </fieldset>
-
-
         <fieldset>
-            <legend class="fieldset-legend">Caption</legend>
+            <legend class="fieldset-legend">Font size</legend>
             <input
-                class="input w-full {{ 'input-error' if errs is not none and 'caption' in errs else '' }}"
-                name="caption"
-                type="text"
-                value="{{ sub.caption }}"
+                class="input {{ 'input-error' if errs is not none and 'font_size' in errs else '' }}"
+                name="font_size"
+                type="number"
+                value="{{ settings.font_size }}"
             />
-            {% if errs is not none and 'caption' in errs %}
-                <div class="validator-hint text-error">{{ errs['caption'] }}</div>
+            {% if errs is not none and 'font_size' in errs %}
+                <div class="text-error">{{ errs['font_size'] }}</div>
             {% endif %}
         </fieldset>
-        <button
-            id="generate-gif-button"
-            class="btn btn-primary group [.htmx-request]:bg-base-content/10 [.htmx-request]:border-none [.htmx-request]:shadow-none [.htmx-request]:text-base-content/20 [.htmx-request]:cursor-not-allowed"
-            type="submit"
-        >
-            <div class="flex group-[.htmx-request]:hidden">Generate</div>
-            <div class="hidden group-[.htmx-request]:flex flex-row gap-2 items-center">
-                <div class="loading loading-sm"></div>
-                Generating...
+    </div>
+    <div class="flex flex-row justify-between gap-4">
+        <fieldset>
+            <legend class="fieldset-legend">Square (crop)</legend>
+            <input
+                class="checkbox"
+                name="crop"
+                type="checkbox"
+                {% if settings.crop %}
+                checked
+                {% endif %}
+            />
+        </fieldset>
+        <fieldset>
+            <legend class="fieldset-legend">Boomerang (loop)</legend>
+            <input
+                class="checkbox"
+                name="boomerang"
+                type="checkbox"
+                {% if settings.boomerang %}
+                checked
+                {% endif %}
+            />
+        </fieldset>
+        <fieldset>
+            <legend class="fieldset-legend">Better colours</legend>
+            <input
+                class="checkbox transition"
+                name="colour"
+                type="checkbox"
+                id="gifColours"
+                {% if settings.colour %}
+                checked
+                {% endif %}
+            />
+        </fieldset>
+    </div>
+    <fieldset class="flex gap-3">
+        <legend class="fieldset-legend">Select Format</legend>
+
+        <label class="flex-1">
+            <input
+                id="webpRadio"
+                type="radio"
+                name="format"
+                value="webp"
+                class="peer hidden"
+                {% if settings.format == 'webp' or settings.format is not defined %}
+                checked
+                {% endif %}
+            />
+            <div class="w-full btn not-peer-checked:btn-outline peer-checked:btn-primary not-peer-checked:hover:bg-base-200 not-peer-checked:hover:border-inherit">
+                WEBP
             </div>
-        </button>
-    </form>
+        </label>
 
-    {% block scripts %}
-        <script>
-            document.addEventListener('htmx:afterSettle', (evt) => {
+        <label class="flex-1">
+            <input
+                id="gifRadio"
+                type="radio"
+                name="format"
+                value="gif"
+                class="peer hidden"
+                {% if settings.format == 'gif' %}
+                checked
+                {% endif %}
+            />
+            <div class="w-full btn not-peer-checked:btn-outline peer-checked:btn-primary not-peer-checked:hover:bg-base-200 not-peer-checked:hover:border-inherit">
+                GIF
+            </div>
+        </label>
+    </fieldset>
+    <fieldset>
+        <legend class="fieldset-legend">Caption</legend>
+        <textarea
+            class="textarea w-full {{ 'input-error' if errs is not none and 'caption' in errs else '' }}"
+            name="caption"
+            type="text"
+        >{{ settings.caption }}</textarea>
+        {% if errs is not none and 'caption' in errs %}
+            <div class="text-error">{{ errs['caption'] }}</div>
+        {% endif %}
+    </fieldset>
 
-                // Prevents some errors being thrown in the console
-                if (!document.getElementById('webpRadio')) return;
+    <button
+        id="generate-gif-button"
+        class="btn btn-primary group [.htmx-request]:bg-base-content/10 [.htmx-request]:border-none [.htmx-request]:shadow-none [.htmx-request]:text-base-content/20 [.htmx-request]:cursor-not-allowed"
+        type="submit"
+    >
+        <div class="flex group-[.htmx-request]:hidden">Generate</div>
+        <div class="hidden group-[.htmx-request]:flex flex-row gap-2 items-center">
+            <div class="loading loading-sm"></div>
+            Generating...
+        </div>
+    </button>
 
-                const webpRadio  = document.getElementById('webpRadio')
-                const gifRadio   = document.getElementById('gifRadio')
-                const gifColours = document.getElementById('gifColours')
-
-                function toggleDisabled() {
-                    gifColours.disabled = webpRadio.checked
-                }
-
-                // Initial state
-                toggleDisabled()
-
-                // Add change event listeners
-                webpRadio.addEventListener('change', toggleDisabled)
-                gifRadio.addEventListener('change', toggleDisabled)
-
-            })
-        </script>
-    {% endblock %}
-
+    <div id="saved-clips" style="display: none;"></div>
+</form>
 {% endif %}
+
+{% block scripts %}
+    <script>
+        document.addEventListener('htmx:afterSettle', (evt) => {
+
+            // Prevents some errors being thrown in the console
+            if (!document.getElementById('webpRadio')) return;
+
+            const webpRadio  = document.getElementById('webpRadio')
+            const gifRadio   = document.getElementById('gifRadio')
+            const gifColours = document.getElementById('gifColours')
+
+            function toggleDisabled() {
+                gifColours.disabled = webpRadio.checked
+            }
+
+            // Initial state
+            toggleDisabled()
+
+            // Add change event listeners
+            webpRadio.addEventListener('change', toggleDisabled)
+            gifRadio.addEventListener('change', toggleDisabled)
+
+        })
+    </script>
+{% endblock %}

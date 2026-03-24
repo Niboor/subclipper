@@ -1,0 +1,36 @@
+<div
+    class="{{ 'hidden' if not sub_data.active else '' }}"
+    id="clip-{{ sub_data.id }}"
+>
+    <fieldset>
+        <legend class="fieldset-legend">Subtitles</legend>
+        <textarea
+            name="clips[{{ sub_data.id }}][text]"
+            type="text"
+            class="textarea w-full"
+        >{{sub_data.text}}</textarea>
+    </fieldset>
+
+    <div class="flex flex-row justify-between gap-4">
+        <fieldset class="w-full">
+            <legend class="fieldset-legend flex items-center gap-2">
+                Clip Timing
+            </legend>
+            <dual-handle-slider
+                id="{{ sub_data.id }}"
+                step="1"
+                padding="10000"
+                start="{{ sub_data.start_time }}"
+                end="{{ sub_data.end_time }}"
+                originalStart="{{ sub_data.original_start_time }}"
+                originalEnd="{{ sub_data.original_end_time }}"
+                {% if errs is not none and 'start' in errs %}
+                startError="{{ errs['start'] }}"
+                {% endif %}
+                {% if errs is not none and 'end' in errs %}
+                endError="{{ errs['end'] }}"
+                {% endif %}
+            />
+        </fieldset>
+    </div>
+</div>

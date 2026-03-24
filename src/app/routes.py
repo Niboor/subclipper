@@ -10,12 +10,14 @@ import time
 import os
 from collections.abc import Callable
 from itertools import chain
+from returns.result import Failure, Success
 
 import flask
 from jinja2 import Template
 
-from ..core.models import ClipSettings, VideoScanStatus, Video
+from ..core.models import ClipSettings, VideoScanStatus, Video, Subtitle
 from ..utils.config import Config
+from sub2clip.subtitles import Subtitle as SSubtitle
 
 logger = logging.getLogger(__name__)
 bp = Blueprint('main', __name__)
@@ -46,25 +48,62 @@ def sse_event_stream(cb: Generator[SseEvent, None, None]) -> Response:
         headers={ 'Cache-Control': 'no-cache', 'Connection': 'keep-alive', "Transfer-Encoding": "chunked", }
     )
 
-def create_clip_settings_from_request() -> ClipSettings:
+def create_clip_settings_from_request() -> tuple[list[Subtitle], ClipSettings]:
     """Create ClipSettings from the current request's query parameters."""
-    return ClipSettings(
-        start_time=request.args.get('start', 0, type=float),
-        end_time=request.args.get('end', 0, type=float),
-        original_start_time=request.args.get('original_start', 0, type=float),
-        original_end_time=request.args.get('original_end', 0, type=float),
-        text=request.args.get('text', '', type=str),
+    video_id = request.args.get('video_id', '', type=str)
+
+    clips: dict[str, dict[str, str]] = {}
+    for key in request.args.keys():
+        if key.startswith('clips['):
+            import re
+            match = re.match(r'clips\[(\S+)\]\[(\w+)\]', key)
+            if match:
+                clip_id, field = match.groups()
+                if clip_id not in clips:
+                    clips[clip_id] = {}
+                key_at_request = request.args.get(key)
+                if key_at_request is not None:
+                    clips[clip_id][field] = key_at_request
+
+
+    sorted_clips = dict(sorted(clips.items()))
+    subs = []
+
+    for idx, [id, clip] in enumerate(sorted_clips.items()):
+        start = round(float(clip['start_time']))
+        end = round(float(clip['end_time']))
+
+        if (idx > 0):
+            prv = subs[-1].end
+            if prv > start:
+                start = prv
+
+        sub = config.subtitle_indexer.find_subtitle(id)
+        if sub is None:
+            raise Exception(f"subtitle with id {id} not found")
+
+        sub.start = start
+        sub.end = end
+        sub.text = clip['text']
+
+        subs.append(sub)
+
+    clip_settings = ClipSettings(
+        start_time=subs[0].start_s,
+        end_time=subs[-1].end_s,
+        original_start_time=subs[0].start_s,
+        original_end_time=subs[-1].end_s,
         crop=request.args.get('crop', False, type=bool),
         resolution=request.args.get('resolution', 500, type=int),
-        subtitle_id=request.args.get('subtitle_id', "", type=str),
-        video_id=request.args.get('video_id', '', type=str),
+        subtitle_id=request.args.get('sub_id', '', type=str),
+        video_id=video_id,
         font_size=request.args.get('font_size', 20, type=int),
         caption=request.args.get('caption', '', type=str),
         boomerang=request.args.get('boomerang', False, type=bool),
         colour=request.args.get('colour', False, type=bool),
-        format=request.args.get('format', 'webp', type=str),
-        font_path=config.font_path
+        format=request.args.get('format', 'webp', type=str)
     )
+    return subs, clip_settings
 
 @bp.route("/public/<path:path>")
 def get_public(path):
@@ -120,7 +159,7 @@ def scan_status_sse():
         def pump(gen):
             for item in gen:
                 event_queue.put(item)
-        
+
         # Start listening to BOTH generators concurrently.
         threading.Thread(
             target=pump,
@@ -138,7 +177,7 @@ def scan_status_sse():
         while True:
             try:
                 event = event_queue.get(timeout=10)
-                
+
                 if isinstance(event, tuple):
                     (path, progress) = event
                     logger.debug(f"path {path} progress changed to {progress}. Sending over SSE stream now")
@@ -212,50 +251,106 @@ def locate(subtitle_id: str):
 
     if len(sub_page) == 0:
         return f"no subtitle with id {subtitle_id} found", 404
-    
+
     resp = flask.Response("OK")
     fragment_path = f"/?page={sub_page[0]}&page_length={page_length}#id{subtitle_id}"
     resp.headers['HX-Location'] = json.dumps({"path": fragment_path, "target": "main"})
     resp.status_code = 200
 
     return resp
-    
 
 
 @bp.route("/sub_form/<path:subtitle_id>")
-def get_sub(subtitle_id: str):
+def sub_form(subtitle_id: str):
     sub = config.subtitle_indexer.find_subtitle(subtitle_id)
     if sub is None:
         return "Subtitle not found", 404
+    
+    sub_data = sub.to_sub_data(active=True)
 
-    sub_data = {
-        'id': subtitle_id,
-        'video_id': sub.video_id,
-        'start_time': sub.start,
-        'end_time': sub.end,
-        'text': sub.text,
+    return cached_render_template(
+        "tweak_modal.html",
+        subs_data=[sub_data],
+        settings=get_default_settings(),
+        errs=None
+    )
+
+@bp.route("/sub_data/<path:subtitle_id>")
+def sub_data(subtitle_id: str):
+    subs, settings = create_clip_settings_from_request()
+
+    sub_exists = any(sub.id == subtitle_id for sub in subs)
+
+    if sub_exists:
+        new_subs = subs
+    else:
+        new_sub = config.subtitle_indexer.find_subtitle(subtitle_id)
+        if new_sub is None:
+            return f"Subtitle with id {subtitle_id} not found", 404
+        
+        new_subs = [*subs, new_sub]
+
+    new_subs.sort(key=lambda sub: sub.get_ordering())
+    
+    subs_data = [sub.to_sub_data(active=sub.id == subtitle_id) for sub in new_subs]
+
+    return cached_render_template(
+        "settings.html",
+        subs_data=subs_data,
+        settings=settings,
+        errs=None,
+    )
+    
+@bp.route("/thumbnail/<path:subtitle_id>")
+def thumbnail(subtitle_id: str):
+    resolution = request.args.get("resolution", 50, type=int)
+    subtitle = config.subtitle_indexer.find_subtitle(subtitle_id)
+    if subtitle is None:
+        return f"Subtitle with id {subtitle_id} not found", 404
+    path = config.video_processor.get_thumbnail(subtitle, resolution=resolution)
+    match path:
+        case Failure(err):
+            return f"{err}", 500
+        case Success(path):
+            return send_from_directory(path.parent, path.name)
+        case _:
+            raise Exception("unreachable")
+
+def get_default_settings():
+    return {
         'crop': False,
-        'resolution': 320,
-        'font_type': str(config.font_path),
+        'resolution': 200,
+        'font_name': str(config.font_name),
         'font_size': 20,
         'caption': "",
         'colour': False,
-        'boomerang': False,
+        'boomerang': False
     }
 
-    hx_request = request.headers.get("HX-Request")
-    if hx_request is None:
-        return cached_render_template("root.html", sub_data=sub_data, videos=[], single_show_name=config.single_show_name)
-    else:
-        return cached_render_template("tweak_modal.html", sub_data=sub_data)
+def get_err_settings(clip_settings: ClipSettings):
+    return {
+        'crop': clip_settings.crop,
+        'resolution': clip_settings.resolution,
+        'font_name': str(config.font_name),
+        'font_size': clip_settings.font_size,
+        'caption': clip_settings.caption,
+        'colour': clip_settings.colour,
+        'boomerang': clip_settings.boomerang,
+        'format': clip_settings.format
+    }
 
 @bp.route("/gif_view")
 def get_gif_view():
-    settings = create_clip_settings_from_request()
+    subs, settings = create_clip_settings_from_request()
 
     errors = settings.validate()
     if errors:
-        resp = cached_render_template("settings.html", errs=errors, sub=settings.__dict__)
+        resp = cached_render_template(
+            "settings.html",
+            errs=errors,
+            settings=get_err_settings(settings),
+            subs_data=[sub.to_sub_data() for sub in subs]
+        )
         resp.headers['HX-Reswap'] = 'outerHTML'
         return resp, 400
 
@@ -263,27 +358,30 @@ def get_gif_view():
 
 @bp.route("/gif")
 def get_gif():
-    settings = create_clip_settings_from_request()
+    subs, settings = create_clip_settings_from_request()
 
-    output_path, error = config.video_processor.generate_clip(settings)
-    if error:
-        logger.warning(f"Failed to generate clip: {error}")
-        return error, 500
-
-    try:
-        response = send_file(output_path, mimetype=f'image/{settings.format}')
-        response.headers['Cache-Control'] = 'public, max-age=86400'
-        return response
-    finally:
-        # Clean up the temporary directory and its contents
-        if output_path and output_path.exists():
-            tmp_dir = output_path.parent
+    output_path = config.video_processor.generate_clip(settings, subs)
+    match output_path:
+        case Failure(error):
+            logger.warning(f"Failed to generate clip: {error}")
+            return error, 500
+        case Success(output_path):
             try:
-                output_path.unlink()
-                (tmp_dir / 'clip.mp4').unlink(missing_ok=True)
-                tmp_dir.rmdir()
-            except Exception as e:
-                logger.warning(f"Failed to clean up temporary files: {e}")
+                response = send_file(output_path, mimetype=f'image/{settings.format}')
+                response.headers['Cache-Control'] = 'public, max-age=86400'
+                return response
+            finally:
+                # Clean up the temporary directory and its contents
+                if output_path and output_path.exists():
+                    tmp_dir = output_path.parent
+                    try:
+                        output_path.unlink()
+                        (tmp_dir / 'clip.mp4').unlink(missing_ok=True)
+                        tmp_dir.rmdir()
+                    except Exception as e:
+                        logger.warning(f"Failed to clean up temporary files: {e}")
+        case _:
+            raise Exception("unreachable")
 
 @bp.route("/", defaults={'path': '.'})
 @bp.route("/<path:path>")
@@ -293,12 +391,15 @@ def index(path: str):
     page = request.args.get("page", None, type=int)
     page_length = request.args.get("page_length", config.default_page_length, type=int)
 
+    path_is_file = config.subtitle_indexer.get_path(path).is_file()
+
     hx_request = request.headers.get("HX-Request")
     if config.single_show_name is None and path == "." and filter == '' and page is None:
         template = "root.html" if hx_request is None else "index.html"
         return cached_render_template(
             template,
-            sub_data=None,
+            subs_data=[],
+            settings=get_default_settings(),
             url=None,
             errs=None,
             single_show_name=config.single_show_name,
@@ -313,7 +414,8 @@ def index(path: str):
         resp = cached_render_template(
             template,
             path=path,
-            sub_data=None,
+            subs_data=[],
+            settings=get_default_settings(),
             errs=None,
             single_show_name=config.single_show_name,
 

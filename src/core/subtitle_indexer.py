@@ -7,14 +7,13 @@ import os
 import duckdb
 import pykka
 import math
+import hashlib
 
-from subs.subs import (extract_subs)
-
+from sub2clip.sub2clip import (extract_subs, extract_subs_by_language)
 from .models import Video, VideoScanStatus, Subtitle
+from returns.result import Result, Failure, Success
 
 logger = logging.getLogger(__name__)
-
-    
 
 class SubtitleDatabase(pykka.ThreadingActor):
     def __init__(self, db_path: str):
@@ -41,8 +40,10 @@ class SubtitleDatabase(pykka.ThreadingActor):
                 subtitle_id TEXT PRIMARY KEY,
                 video_id TEXT NOT NULL,
                 text TEXT NOT NULL,
-                start_seconds REAL NOT NULL,
-                end_seconds REAL NOT NULL,
+                start_time BIGINT NOT NULL,
+                end_time BIGINT NOT NULL,
+                prv_subtitle TEXT,
+                nxt_subtitle TEXT,
                 FOREIGN KEY(video_id) REFERENCES videos(video_id)
             )
         ''')
@@ -57,13 +58,11 @@ class SubtitleDatabase(pykka.ThreadingActor):
         self.conn.commit()
 
         return super().on_start()
-    
+
     def on_stop(self) -> None:
-
         self.conn.close()
-
         return super().on_stop()
-    
+
     def get_subtitle_pages(self, search_subpath: str, search_string: str, page_length: int) -> int:
         cursor = self.conn.cursor()
         cursor.execute("SELECT COUNT(*) FROM subtitles WHERE video_id LIKE ? AND text ILIKE ?", [f"{search_subpath if search_subpath != '.' else ''}%", f"%{search_string}%"])
@@ -81,23 +80,34 @@ class SubtitleDatabase(pykka.ThreadingActor):
         cursor = self.conn.cursor()
         cursor.execute(f"SELECT * FROM subtitles WHERE video_id LIKE ? AND text ILIKE ? LIMIT ?{ ' OFFSET ?' if offset is not None else '' }", [f"{search_subpath if search_subpath != '.' else ''}%", f"%{search_string}%", page_length, *([offset] if offset is not None else [])])
         rows = cursor.fetchall()
-        subs = [Subtitle(id=subtitle_id, video_id=video_id, text=text, start=start, end=end) for (subtitle_id, video_id, text, start, end) in rows]
+        subs = [Subtitle(
+                id=subtitle_id,
+                video_id=video_id,
+                text=text,
+                start=start,
+                end=end,
+                prv_id=prv_id,
+                nxt_id=nxt_id
+            ) for (subtitle_id, video_id, text, start, end, prv_id, nxt_id) in rows
+        ]
         cursor.close()
         return subs
-    
+
     def find_subtitle(self, subtitle_id: str) -> Optional[Subtitle]:
         cursor = self.conn.cursor()
         cursor.execute("SELECT * FROM subtitles WHERE subtitle_id = ?", [subtitle_id])
         try:
             row = cursor.fetchone()
             if row is not None:
-                (subtitle_id, video_id, text, start, end) = row
+                (subtitle_id, video_id, text, start, end, prv_id, nxt_id) = row
                 return Subtitle(
                     id=subtitle_id,
                     video_id=video_id,
                     text=text,
                     start=start,
                     end=end,
+                    prv_id=prv_id,
+                    nxt_id=nxt_id
                 )
             else:
                 return None
@@ -106,6 +116,22 @@ class SubtitleDatabase(pykka.ThreadingActor):
             return None
         finally:
             cursor.close()
+
+    def get_video_subtitles(self, video_id: str) -> List[Subtitle]:
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT * FROM subtitles WHERE video_id = ?", [video_id])
+        rows = cursor.fetchall()
+        subs = [Subtitle(
+            id=subtitle_id,
+            video_id=video_id,
+            text=text,
+            start=start,
+            end=end,
+            prv_id=prv_id,
+            nxt_id=nxt_id,
+        ) for (subtitle_id, video_id, text, start, end, prv_id, nxt_id) in rows]
+        cursor.close()
+        return subs
 
     def get_video(self, video_id: str) -> Optional[Video]:
         cursor = self.conn.cursor()
@@ -117,14 +143,14 @@ class SubtitleDatabase(pykka.ThreadingActor):
         else:
             (video_id, status, fail_reason) = row
             return Video(video_id, VideoScanStatus(status), fail_reason)
-        
+
     def get_videos(self, video_id_prefix: str) -> List[Video]:
         cursor = self.conn.cursor()
         cursor.execute("SELECT * FROM videos WHERE video_id LIKE ?", [f"{video_id_prefix if video_id_prefix.__str__() != '.' else ''}%"])
         videos = [Video(video_id, VideoScanStatus(status), fail_reason) for (video_id, status, fail_reason) in cursor.fetchall()]
         cursor.close()
         return videos
-    
+
     def update_video(self, video: Video):
         cursor = self.conn.cursor()
         cursor.execute("INSERT OR REPLACE INTO videos (video_id, status, fail_reason) VALUES (?, ?, ?)", [video.id, video.status.value, video.fail_reason])
@@ -135,14 +161,23 @@ class SubtitleDatabase(pykka.ThreadingActor):
         cursor = self.conn.cursor()
         cursor.begin()
         for subtitle in subtitles:
-            cursor.execute('''INSERT OR REPLACE INTO subtitles (subtitle_id, video_id, text, start_seconds, end_seconds) VALUES (?,?,?,?,?)''', [subtitle.id, subtitle.video_id, subtitle.text, subtitle.start, subtitle.end])
+            cursor.execute(
+                "INSERT OR REPLACE INTO subtitles (subtitle_id, video_id, text, start_time, end_time, prv_subtitle, nxt_subtitle) VALUES (?,?,?,?,?,?,?)",
+                [subtitle.id, subtitle.video_id, subtitle.text, subtitle.start, subtitle.end, subtitle.prv_id, subtitle.nxt_id])
         cursor.commit()
         self.conn.commit()
         cursor.close()
 
 
 class SubtitleScanner(pykka.ThreadingActor):
-    def __init__(self, root_path: Path, scan_path: Path, db: pykka.ActorProxy[SubtitleDatabase], progress_listener: Queue[tuple[Path, float]], video_update_listener: Queue[Video]):
+    def __init__(self,
+        root_path: Path,
+        scan_path: Path,
+        db: pykka.ActorProxy[SubtitleDatabase],
+        progress_listener: Queue[tuple[Path, float]],
+        video_update_listener: Queue[Video],
+        languages: list[str]
+    ):
         super().__init__()
 
         # The absolute path to the root of the file system where all the video files are stored
@@ -153,6 +188,8 @@ class SubtitleScanner(pykka.ThreadingActor):
 
         self._progress_listener = progress_listener
         self._video_update_listener = video_update_listener
+
+        self.languages = languages
 
     def on_start(self) -> None:
         # the full absolute path to the scan path
@@ -206,24 +243,31 @@ class SubtitleScanner(pykka.ThreadingActor):
 
     def _extract_subtitles(self, video_id: Path) -> List[Subtitle]:
         """Extract subtitles from a video file."""
-        absolute_video_path = self.root_path.joinpath(video_id).__str__()
+        absolute_video_path = self.root_path.joinpath(video_id)
         try:
             logger.debug(f"Extracting subtitles from {video_id}")
-            ssa_events, ok = extract_subs(absolute_video_path)
-            if ok:
-                return [
-                    Subtitle(
-                        id=encode_id(f"{video_id}/{idx}"),
-                        start=event.start / 1000,  # Convert to seconds
-                        end=event.end / 1000,
-                        text=event.text,
-                        video_id=video_id.__str__()
-                    )
-                    for idx, event in enumerate(ssa_events) if not isinstance(event, str)
-                ]
-            raise Exception(ssa_events)
+            langs = [lang.strip().lower() for lang in self.languages] if self.languages else None
+            subtitles = extract_subs_by_language(absolute_video_path, langs) if langs else extract_subs(absolute_video_path)
+            # Significantly reduces id length of subtitle while remaining unique per video
+            video_id_md5 = hashlib.md5(video_id.__str__().encode("utf-8")).hexdigest()[0:8]
+            match subtitles:
+                case Success(subtitles):
+                    return [
+                        Subtitle.from_subtitle(
+                            sub,
+                            id=encode_id(f"{video_id_md5}/{idx}"),
+                            prv_id=encode_id(f"{video_id_md5}/{idx-1}") if idx > 0 else '',
+                            nxt_id=encode_id(f"{video_id_md5}/{idx+1}") if idx < len(subtitles)-1 else '',
+                            video_id=video_id.__str__()
+                        )
+                        for idx, sub in enumerate(subtitles)
+                    ]
+                case Failure(err):
+                    raise Exception(err)
+                case _:
+                    raise Exception("unreachable")
         except Exception as e:
-            logger.exception(f"Failed to extract subtitles from {absolute_video_path}")
+            logger.exception(f"Failed to extract subtitles from {video_id}")
             raise
 
     def _get_progress(self, path: Path) -> float:
@@ -233,7 +277,7 @@ class SubtitleScanner(pykka.ThreadingActor):
         return percent
 
 class SubtitleIndexer():
-    def __init__(self, root_path: Path, db_path: str):
+    def __init__(self, root_path: Path, db_path: str, languages: list[str]):
         self.root_path = root_path
         self._db: pykka.ActorRef[SubtitleDatabase] = SubtitleDatabase.start(db_path)
         self.db: pykka.ActorProxy[SubtitleDatabase] = self._db.proxy()
@@ -241,7 +285,7 @@ class SubtitleIndexer():
         self.progress_listener: Queue[tuple[Path, float]] = Queue()
         self.video_update_listener: Queue[Video] = Queue()
 
-        self._subtitle_scanner = SubtitleScanner.start(self.root_path, Path("."), self.db, self.progress_listener, self.video_update_listener)
+        self._subtitle_scanner = SubtitleScanner.start(self.root_path, Path("."), self.db, self.progress_listener, self.video_update_listener, languages)
 
     def get_scanning_progress(self, search_subpath: Path) -> Optional[float]:
         videos: List[Video] = self.db.get_videos(search_subpath).get()
@@ -263,7 +307,7 @@ class SubtitleIndexer():
     def get_path(self, search_subpath: str) -> Path:
         subpath = self.root_path.joinpath(search_subpath)
         return subpath
-    
+
     def get_subtitle_pages(self, search_subpath: str, search_string: str, page_length: int) -> int:
         return self.db.get_subtitle_pages(search_subpath, search_string, page_length).get()
 
@@ -272,10 +316,13 @@ class SubtitleIndexer():
 
     def find_subtitle(self, subtitle_id: str) -> Optional[Subtitle]:
         return self.db.find_subtitle(subtitle_id).get()
-        
+    
+    def get_video_subtitles(self, video_id: str):
+        return self.db.get_video_subtitles(video_id).get()
+
     def scan(self, path: Path):
         raise Exception("not implemented")
-    
+
     def stop(self):
         self._db.stop()
         self._subtitle_scanner.stop()
