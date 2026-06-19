@@ -15,7 +15,6 @@
     hx-target-4*="this"
     hx-swap="innerHTML"
     hx-indicator="#generate-gif-button"
-    hx-include=".clip-settings"
 >
     <div class="flex flex-col items-center">
         <div role="tablist" class="tabs tabs-box">
@@ -53,7 +52,7 @@
                 hx-trigger="click"
                 hx-target="#settings"
                 hx-swap="innerHTML"
-                hx-include="closest form, .clip-settings"
+                hx-include="closest form"
                 {% endif %}
             >
                 + Next clip
