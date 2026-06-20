@@ -245,15 +245,21 @@ def current_path(path):
 @bp.route("/locate/<subtitle_id>")
 def locate(subtitle_id: str):
     page_length = request.args.get("page_length", config.default_page_length, type=int)
-    subs = config.subtitle_indexer.search_subtitles('', '', 0, None)
-    sub_pages = [subs[x:x+page_length] for x in range(0, len(subs), page_length)]
-    sub_page = [i for i, page in enumerate(sub_pages) if len([sub for sub in page if sub.id == subtitle_id]) > 0] if sub_pages else []
+    # Ensure sensible page length
+    if page_length is None or page_length <= 0:
+        page_length = config.default_page_length
 
-    if len(sub_page) == 0:
+    # Compute the subtitle's 0-based index using a DB-side count and derive the page
+    search_subpath = ''
+    search_string = ''
+    index = config.subtitle_indexer.get_subtitle_index(subtitle_id, search_subpath, search_string)
+    if index is None:
         return f"no subtitle with id {subtitle_id} found", 404
 
+    page_num = int(index) // int(page_length)
+
     resp = flask.Response("OK")
-    fragment_path = f"/?page={sub_page[0]}&page_length={page_length}#id{subtitle_id}"
+    fragment_path = f"/?page={page_num}&page_length={page_length}#id{subtitle_id}"
     resp.headers['HX-Location'] = json.dumps({"path": fragment_path, "target": "main"})
     resp.status_code = 200
 
@@ -265,7 +271,7 @@ def sub_form(subtitle_id: str):
     sub = config.subtitle_indexer.find_subtitle(subtitle_id)
     if sub is None:
         return "Subtitle not found", 404
-    
+
     sub_data = sub.to_sub_data(active=True)
 
     return cached_render_template(
@@ -287,11 +293,11 @@ def sub_data(subtitle_id: str):
         new_sub = config.subtitle_indexer.find_subtitle(subtitle_id)
         if new_sub is None:
             return f"Subtitle with id {subtitle_id} not found", 404
-        
+
         new_subs = [*subs, new_sub]
 
     new_subs.sort(key=lambda sub: sub.get_ordering())
-    
+
     subs_data = [sub.to_sub_data(active=sub.id == subtitle_id) for sub in new_subs]
 
     return cached_render_template(
@@ -300,7 +306,7 @@ def sub_data(subtitle_id: str):
         settings=settings,
         errs=None,
     )
-    
+
 @bp.route("/thumbnail/<path:subtitle_id>")
 def thumbnail(subtitle_id: str):
     resolution = request.args.get("resolution", 50, type=int)

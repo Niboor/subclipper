@@ -27,6 +27,7 @@ class VideoProcessor:
         """Generate a video clip with the given settings."""
         try:
             logger.debug(f"Starting clip generation with settings: {settings}")
+            start_ts = time.time()
             errors = settings.validate()
             if errors:
                 return Failure(str(errors))
@@ -57,7 +58,7 @@ class VideoProcessor:
                     end=end_time_ms,
                     text=settings.caption,
                 ) if settings.caption else None
-            
+
             ssubs = [sub.to_subtitle() for sub in subs]
 
             err = generate(
@@ -68,11 +69,13 @@ class VideoProcessor:
             match err:
                 case Failure(err):
                     return Failure(err)
+            duration = time.time() - start_ts
+            logger.info(f"Clip generation completed in {duration:.2f}s for video {settings.video_id}")
             return Success(output_path)
         except Exception as e:
             logger.exception("Failed to generate clip")
             return Failure(e.__str__())
-        
+
     def get_thumbnail(self, subtitle: Subtitle, resolution: int=50) -> Result[Path, str]:
         """Get the thumbnail for the given subtitle at the set resolution"""
 
@@ -83,10 +86,10 @@ class VideoProcessor:
             return Success(output_path)
         else:
             return self._generate_thumbnail(subtitle.video_id, subtitle.start, output_path, resolution=resolution)
-        
+
     def _generate_thumbnail(self, video_id: str, timestamp: int, output_path: Path, resolution: int=50) -> Result[Path, str]:
         """Generate the stillframe for the given timestamp"""
-    
+
         clip_settings = SubSettings(
             input_path=self.search_path.joinpath(video_id),
             output_path=output_path,

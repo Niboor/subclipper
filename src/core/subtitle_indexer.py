@@ -4,6 +4,7 @@ from typing import Any, Generator, List, Optional
 from queue import Queue
 from ..utils.id_encoding import encode_id
 import os
+import time
 import duckdb
 import pykka
 import math
@@ -78,7 +79,8 @@ class SubtitleDatabase(pykka.ThreadingActor):
     def search_subtitles(self, search_subpath: str, search_string: str, page: int, page_length: int | None) -> List[Subtitle]:
         offset = page * page_length if page_length is not None else None
         cursor = self.conn.cursor()
-        cursor.execute(f"SELECT * FROM subtitles WHERE video_id LIKE ? AND text ILIKE ? LIMIT ?{ ' OFFSET ?' if offset is not None else '' }", [f"{search_subpath if search_subpath != '.' else ''}%", f"%{search_string}%", page_length, *([offset] if offset is not None else [])])
+        # Order results consistently by video_id then start_time so paging and rank calculations are stable
+        cursor.execute(f"SELECT * FROM subtitles WHERE video_id LIKE ? AND text ILIKE ? ORDER BY video_id, start_time LIMIT ?{ ' OFFSET ?' if offset is not None else '' }", [f"{search_subpath if search_subpath != '.' else ''}%", f"%{search_string}%", page_length, *([offset] if offset is not None else [])])
         rows = cursor.fetchall()
         subs = [Subtitle(
                 id=subtitle_id,
@@ -92,6 +94,29 @@ class SubtitleDatabase(pykka.ThreadingActor):
         ]
         cursor.close()
         return subs
+
+    def get_subtitle_index(self, subtitle_id: str, search_subpath: str, search_string: str) -> Optional[int]:
+        """Return the 0-based index (row number) of the given subtitle in the ordered result set
+        filtered by search_subpath and search_string. Returns None if subtitle not found."""
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT video_id, start_time FROM subtitles WHERE subtitle_id = ?", [subtitle_id])
+        row = cursor.fetchone()
+        if row is None:
+            cursor.close()
+            return None
+
+        video_id, start_time = row
+
+        # Count rows that come before this subtitle using the same ORDER BY used in search_subtitles
+        cursor.execute(
+            "SELECT COUNT(*) FROM subtitles WHERE video_id LIKE ? AND text ILIKE ? AND (video_id < ? OR (video_id = ? AND start_time < ?))",
+            [f"{search_subpath if search_subpath != '.' else ''}%", f"%{search_string}%", video_id, video_id, start_time]
+        )
+        count_row = cursor.fetchone()
+        cursor.close()
+        if count_row is None:
+            return 0
+        return int(count_row[0])
 
     def find_subtitle(self, subtitle_id: str) -> Optional[Subtitle]:
         cursor = self.conn.cursor()
@@ -246,13 +271,14 @@ class SubtitleScanner(pykka.ThreadingActor):
         absolute_video_path = self.root_path.joinpath(video_id)
         try:
             logger.debug(f"Extracting subtitles from {video_id}")
+            start_ts = time.time()
             langs = [lang.strip().lower() for lang in self.languages] if self.languages else None
             subtitles = extract_subs_by_language(absolute_video_path, langs) if langs else extract_subs(absolute_video_path)
             # Significantly reduces id length of subtitle while remaining unique per video
             video_id_md5 = hashlib.md5(video_id.__str__().encode("utf-8")).hexdigest()[0:8]
             match subtitles:
                 case Success(subtitles):
-                    return [
+                    result = [
                         Subtitle.from_subtitle(
                             sub,
                             id=encode_id(f"{video_id_md5}/{idx}"),
@@ -262,6 +288,9 @@ class SubtitleScanner(pykka.ThreadingActor):
                         )
                         for idx, sub in enumerate(subtitles)
                     ]
+                    duration = time.time() - start_ts
+                    logger.info(f"Extracted {len(result)} subtitles from {video_id} in {duration:.2f}s")
+                    return result
                 case Failure(err):
                     raise Exception(err)
                 case _:
@@ -314,9 +343,12 @@ class SubtitleIndexer():
     def search_subtitles(self, search_subpath: str, search_string: str, page: int, page_length: int | None) -> List[Subtitle]:
         return self.db.search_subtitles(search_subpath, search_string, page, page_length).get()
 
+    def get_subtitle_index(self, subtitle_id: str, search_subpath: str, search_string: str) -> Optional[int]:
+        return self.db.get_subtitle_index(subtitle_id, search_subpath, search_string).get()
+
     def find_subtitle(self, subtitle_id: str) -> Optional[Subtitle]:
         return self.db.find_subtitle(subtitle_id).get()
-    
+
     def get_video_subtitles(self, video_id: str):
         return self.db.get_video_subtitles(video_id).get()
 
