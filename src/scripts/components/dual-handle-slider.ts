@@ -48,10 +48,11 @@ export class DualHandleSlider extends LitElement {
     this.originalEnd = this.originalEnd ? this.originalEnd : this.end
     this.currentStart = this.start;
     this.currentEnd = this.end;
-    const totalClipLength = this.originalEnd - this.originalStart
-    this.sliderStart = Math.max(0, this.originalStart - ((this.padding - totalClipLength) / 2));
-    this.sliderEnd = this.originalEnd + ((this.padding - totalClipLength) / 2);
-    this.requestUpdate()
+    const paddingMs = this.padding * 1000;
+    const totalClipLength = this.originalEnd - this.originalStart;
+    this.sliderStart = Math.max(0, this.originalStart - ((paddingMs - totalClipLength) / 2));
+    this.sliderEnd = this.originalEnd + ((paddingMs - totalClipLength) / 2);
+    this.requestUpdate();
   }
 
   private timeToPosition(time: number): number {
@@ -70,12 +71,13 @@ export class DualHandleSlider extends LitElement {
     const move = (e: MouseEvent | TouchEvent) => {
       const position = this.getRelativePosition(e);
       const time = this.positionToTime(position);
+      const stepMs = this.step * 1000;
 
       if (handle === "start") {
-        this.currentStart = Math.min(time, this.currentEnd - this.step)
+        this.currentStart = Math.min(time, this.currentEnd - stepMs);
         this.setAttribute('start', this.currentStart.toString());
       } else {
-        this.currentEnd = Math.max(time, this.currentStart + this.step)
+        this.currentEnd = Math.max(time, this.currentStart + stepMs);
         this.setAttribute('end', this.currentEnd.toString());
       }
       this.requestUpdate();
@@ -108,12 +110,19 @@ export class DualHandleSlider extends LitElement {
   }
 
   private updateFromInput(type: "start" | "end", value: number) {
+    const valueMs = value * 1000;
+    const stepMs = this.step * 1000;
     if (type === "start") {
-      this.currentStart = Math.min(value, this.currentEnd - this.step);
+      this.currentStart = Math.min(valueMs, this.currentEnd - stepMs);
     } else {
-      this.currentEnd = Math.max(value, this.currentStart + this.step);
+      this.currentEnd = Math.max(valueMs, this.currentStart + stepMs);
     }
     this.requestUpdate();
+  }
+
+  private formatSeconds(ms: number): string {
+    const s = (ms / 1000).toFixed(3);
+    return s.endsWith('0') ? s.slice(0, -1) : s;
   }
 
   reset() {
@@ -197,7 +206,7 @@ export class DualHandleSlider extends LitElement {
               id="startInput"
               type="number"
               step=${this.step}
-              value=${this.currentStart}
+              value=${this.formatSeconds(this.currentStart)}
               @change=${(e: Event) =>
                 this.updateFromInput(
                   "start",
@@ -230,7 +239,7 @@ export class DualHandleSlider extends LitElement {
               id="endInput"
               type="number"
               step=${this.step}
-              value=${this.currentEnd}
+              value=${this.formatSeconds(this.currentEnd)}
               @change=${(e: Event) =>
                 this.updateFromInput(
                   "end",
