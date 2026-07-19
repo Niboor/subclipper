@@ -1,5 +1,6 @@
 import json
 import queue
+import shutil
 import threading
 from flask import Response, Blueprint, render_template, request, send_file, send_from_directory, make_response, jsonify, current_app, stream_with_context
 from pathlib import Path
@@ -381,9 +382,9 @@ def get_gif():
                 if output_path and output_path.exists():
                     tmp_dir = output_path.parent
                     try:
-                        output_path.unlink()
-                        (tmp_dir / 'clip.mp4').unlink(missing_ok=True)
-                        tmp_dir.rmdir()
+                        # Use shutil.rmtree to forcefully remove directory and all contents
+                        # This handles cases where sub2clip or other processes leave files
+                        shutil.rmtree(tmp_dir, ignore_errors=True)
                     except Exception as e:
                         logger.warning(f"Failed to clean up temporary files: {e}")
         case _:
