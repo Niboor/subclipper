@@ -20,7 +20,18 @@
                         hx-target="#modal-container"
                         preserve-params="false"
                     >
-                        <img src="/thumbnail/{{ sub.id }}?resolution=50" class="min-w-[88px]" height="50" />
+                        <div class="relative min-w-[88px] w-[88px] h-[50px] overflow-hidden rounded shrink-0">
+                            <div class="skeleton absolute inset-0 w-full h-full"></div>
+                            <img
+                                src="/thumbnail/{{ sub.id }}?resolution=50"
+                                class="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-300"
+                                height="50"
+                                loading="lazy"
+                                decoding="async"
+                                onload="this.classList.remove('opacity-0'); this.previousElementSibling.remove()"
+                                onerror="this.previousElementSibling.classList.add('bg-error/20')"
+                            />
+                        </div>
                         <div class="list-col-grow flex flex-col items-start">
                             <div class="flex flex-row gap-2">
                                 <div class="text-xs uppercase font-semibold opacity-60">{{ sub.video_id }}</div>
