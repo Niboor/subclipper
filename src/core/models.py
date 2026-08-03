@@ -20,6 +20,8 @@ class VideoScanStatus(Enum):
 class Video:
     id: str
     status: VideoScanStatus
+    width: int
+    height: int
     fail_reason: Optional[str]
 
     def already_scanned(self) -> bool:
@@ -46,7 +48,7 @@ class Subtitle(SSubtitle):
             prv_id=prv_id,
             nxt_id=nxt_id
         )
-    
+
     def to_subtitle(self) -> SSubtitle:
         return SSubtitle(
             start=self.start,
@@ -56,7 +58,7 @@ class Subtitle(SSubtitle):
             nxt=self.nxt,
             prv=self.prv,
         )
-    
+
     def to_sub_data(self, active: bool = False) -> dict[str, Any]:
         return {
             'id': self.id,
@@ -70,7 +72,7 @@ class Subtitle(SSubtitle):
             'nxt_id': self.nxt_id,
             'active': active,
         }
-    
+
     def get_ordering(self) -> int:
         decoded_id = decode_id(self.id)
         [*_, subtitle_id] = decoded_id.split("/")

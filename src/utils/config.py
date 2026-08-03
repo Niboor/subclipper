@@ -49,5 +49,5 @@ class Config:
     def video_processor(self):
         """Get the VideoProcessor instance, creating it if necessary."""
         if self._video_processor is None:
-            self._video_processor = VideoProcessor(self.search_path, self.thumbnail_path, self.font_name, self.languages)
+            self._video_processor = VideoProcessor(self.search_path, self.thumbnail_path, self.font_name, self.languages, self.subtitle_indexer)
         return self._video_processor

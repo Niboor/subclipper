@@ -10,7 +10,7 @@ import pykka
 import math
 import hashlib
 
-from sub2clip.sub2clip import (extract_subs, extract_subs_by_language)
+from sub2clip.sub2clip import (extract_subs, extract_subs_by_language, extract_dimensions)
 from .models import Video, VideoScanStatus, Subtitle
 from returns.result import Result, Failure, Success
 
@@ -33,6 +33,8 @@ class SubtitleDatabase(pykka.ThreadingActor):
             CREATE TABLE IF NOT EXISTS videos (
                 video_id TEXT NOT NULL PRIMARY KEY,
                 status TEXT CHECK( status IN ('UNSCANNED', 'SCANNING', 'SCANNED_SUCCESS', 'SCANNED_FAIL') ) NOT NULL,
+                width INTEGER NOT NULL,
+                height INTEGER NOT NULL,
                 fail_reason TEXT
             )
         ''')
@@ -166,19 +168,19 @@ class SubtitleDatabase(pykka.ThreadingActor):
         if row is None:
             return None
         else:
-            (video_id, status, fail_reason) = row
-            return Video(video_id, VideoScanStatus(status), fail_reason)
+            (video_id, status, width, height, fail_reason) = row
+            return Video(video_id, VideoScanStatus(status), width, height, fail_reason)
 
     def get_videos(self, video_id_prefix: str) -> List[Video]:
         cursor = self.conn.cursor()
         cursor.execute("SELECT * FROM videos WHERE video_id LIKE ?", [f"{video_id_prefix if video_id_prefix.__str__() != '.' else ''}%"])
-        videos = [Video(video_id, VideoScanStatus(status), fail_reason) for (video_id, status, fail_reason) in cursor.fetchall()]
+        videos = [Video(video_id, VideoScanStatus(status), width, height, fail_reason) for (video_id, status, width, height, fail_reason) in cursor.fetchall()]
         cursor.close()
         return videos
 
     def update_video(self, video: Video):
         cursor = self.conn.cursor()
-        cursor.execute("INSERT OR REPLACE INTO videos (video_id, status, fail_reason) VALUES (?, ?, ?)", [video.id, video.status.value, video.fail_reason])
+        cursor.execute("INSERT OR REPLACE INTO videos (video_id, status, width, height, fail_reason) VALUES (?, ?, ?, ?, ?)", [video.id, video.status.value, video.width, video.height, video.fail_reason])
         self.conn.commit()
         cursor.close()
 
@@ -231,7 +233,7 @@ class SubtitleScanner(pykka.ThreadingActor):
                 video: Optional[Video] = self.db.get_video(video_id).get()
                 if video is None:
                     self._update_video_status(video_id, VideoScanStatus.UNSCANNED)
-                    videos.append(Video(video_id, VideoScanStatus.UNSCANNED, None))
+                    videos.append(Video(video_id, VideoScanStatus.UNSCANNED, width=-1, height=-1, fail_reason=None))
                 else:
                     videos.append(video)
         scanned_videos = [video for video in videos if video.already_scanned()]
@@ -245,16 +247,23 @@ class SubtitleScanner(pykka.ThreadingActor):
                     self._update_video_status(video.id, VideoScanStatus.SCANNING)
                     subtitles = self._extract_subtitles(Path(video.id))
                     self.db.insert_subtitles(subtitles)
-                    self._update_video_status(video.id, VideoScanStatus.SCANNED_SUCCESS)
+                    width = height = None
+                    match extract_dimensions(self.root_path.joinpath(Path(video.id))):
+                        case Failure(e):
+                            logger.error(f'Failed to extract dimensions from video {video.id}: {e}')
+                            raise Exception(e)
+                        case Success((width, height)):
+                            pass
+                    self._update_video_status(video.id, VideoScanStatus.SCANNED_SUCCESS, width=width, height=height)
             except Exception as e:
                 logger.exception(e)
-                self._update_video_status(video.id, VideoScanStatus.SCANNED_FAIL, e.__str__())
+                self._update_video_status(video.id, VideoScanStatus.SCANNED_FAIL, fail_reason=e.__str__())
         logger.info("Scan complete")
 
-    def _update_video_status(self, video_id: str, status: VideoScanStatus, fail_reason: str | None = None):
+    def _update_video_status(self, video_id: str, status: VideoScanStatus, width: int =-1, height: int =-1, fail_reason: str | None = None):
         logger.debug(f"updating video status of {video_id} to {status} (errors: {fail_reason})")
 
-        video = Video(video_id, status, fail_reason)
+        video = Video(video_id, status, width=width, height=height, fail_reason=fail_reason)
 
         self.db.update_video(video)
         self._video_update_listener.put(video)

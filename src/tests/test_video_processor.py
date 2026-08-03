@@ -23,6 +23,8 @@ def test_generate_clip(video_processor: VideoProcessor, sample_video_path: Path)
     video = Video(
         id=(Path(__file__).parent.parent / "samples" / "sample.mp4").__str__(),
         status=VideoScanStatus.SCANNED_SUCCESS,
+        width=1920,
+        height=1080,
         fail_reason=None
     )
     video_processor._videos = [video]
@@ -59,6 +61,8 @@ def test_generate_clip_error_handling(video_processor: VideoProcessor, sample_vi
     video = Video(
         id=(Path(__file__).parent.parent / "samples" / "sample.mp4").__str__(),
         status=VideoScanStatus.SCANNED_SUCCESS,
+        width=1920,
+        height=1080,
         fail_reason=None
     )
     video_processor._videos = [video]

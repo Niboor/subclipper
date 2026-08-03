@@ -8,19 +8,21 @@ from contextlib import contextmanager
 from ..utils.id_encoding import encode_id
 from returns.result import Result, Success, Failure
 
+from .subtitle_indexer import SubtitleIndexer
 from .models import Video, Subtitle, ClipSettings
-from sub2clip.sub2clip import generate
+from sub2clip.sub2clip import (generate, create_thumbnail)
 from sub2clip.generation import (ClipSettings as SubSettings, TextStyle, VideoFormat)
 from sub2clip.subtitles import (Subtitle as SSubtitle)
 
 logger = logging.getLogger(__name__)
 
 class VideoProcessor:
-    def __init__(self, search_path: Path, thumbnail_path: Path, font_name: str, languages: list[str]):
+    def __init__(self, search_path: Path, thumbnail_path: Path, font_name: str, languages: list[str], subtitle_indexer: SubtitleIndexer):
         self.search_path = search_path
         self.thumbnail_path = thumbnail_path
         self.font_name = font_name
         self.languages = languages
+        self.subtitle_indexer = subtitle_indexer
         logger.info(f"Initialized VideoProcessor with search_path: {search_path}, font_name: {font_name}, language filter: {languages}")
 
     def generate_clip(self, settings: ClipSettings, subs: list[Subtitle]) -> Result[Path, str]:
@@ -89,19 +91,20 @@ class VideoProcessor:
 
     def _generate_thumbnail(self, video_id: str, timestamp: int, output_path: Path, resolution: int=50) -> Result[Path, str]:
         """Generate the stillframe for the given timestamp"""
+        video = self.subtitle_indexer.get_video(video_id)
+        width, height = video.width, video.height
+        scaled_height = resolution
+        scaled_width  = 2 * round((width * scaled_height / height) / 2)
 
-        clip_settings = SubSettings(
-            input_path=self.search_path.joinpath(video_id),
-            output_path=output_path,
-            output_format=VideoFormat.JPG,
-            start=timestamp,
-            end=timestamp,
-            resolution=resolution
+        result = create_thumbnail(
+            self.search_path.joinpath(video_id),
+            output_path,
+            start_s=timestamp/1000.0,
+            width=scaled_width,
+            height=scaled_height
         )
-
-        err = generate(clip_settings, subtitles=None, thumbnail=True)
-        match err:
-            case Failure(err):
-                return Failure(err)
+        match result:
+            case Failure(e):
+                return Failure(e)
             case _:
                 return Success(output_path)
