@@ -81,7 +81,7 @@ class VideoProcessor:
     def get_thumbnail(self, subtitle: Subtitle, resolution: int=50) -> Result[Path, str]:
         """Get the thumbnail for the given subtitle at the set resolution"""
 
-        filename = f"thumbnail-{encode_id(subtitle.id).replace('.', '-')}-{resolution}.jpg"
+        filename = f"thumbnail-{encode_id(subtitle.id).replace('.', '-')}-{resolution}.webp"
         output_path = self.thumbnail_path / filename
 
         if output_path.exists():
