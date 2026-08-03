@@ -319,7 +319,9 @@ def thumbnail(subtitle_id: str):
         case Failure(err):
             return f"{err}", 500
         case Success(path):
-            return send_from_directory(path.parent, path.name)
+            response = send_from_directory(path.parent, path.name)
+            response.headers['Cache-Control'] = 'public, max-age=31536000, immutable'
+            return response
         case _:
             raise Exception("unreachable")
 
