@@ -6,6 +6,7 @@ import os
 import time
 from contextlib import contextmanager
 from ..utils.id_encoding import encode_id
+from ..utils.metrics import timed
 from returns.result import Result, Success, Failure
 
 from .subtitle_indexer import SubtitleIndexer
@@ -25,6 +26,7 @@ class VideoProcessor:
         self.subtitle_indexer = subtitle_indexer
         logger.info(f"Initialized VideoProcessor with search_path: {search_path}, font_name: {font_name}, language filter: {languages}")
 
+    @timed("video_processor:generate_clip")
     def generate_clip(self, settings: ClipSettings, subs: list[Subtitle]) -> Result[Path, str]:
         """Generate a video clip with the given settings."""
         try:
@@ -78,6 +80,7 @@ class VideoProcessor:
             logger.exception("Failed to generate clip")
             return Failure(e.__str__())
 
+    @timed("video_processor:get_thumbnail")
     def get_thumbnail(self, subtitle: Subtitle, resolution: int=50) -> Result[Path, str]:
         """Get the thumbnail for the given subtitle at the set resolution"""
 

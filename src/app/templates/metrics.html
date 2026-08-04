@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Subclipper Metrics</title>
+    <link rel='stylesheet' type='text/css' href='/public/dist/main.css'>
+    <script src="/public/dist/main.js" type="module"></script>
+</head>
+<body class="p-8">
+    <div class="flex justify-between items-center mb-2">
+        <h1 class="text-2xl font-bold">Subclipper Metrics</h1>
+        <div class="flex items-center gap-3">
+            <input id="filter-input" type="search" placeholder="Filter operations..." class="input input-sm" />
+            <a href="/debug/metrics/rows?format=json" target="_blank" class="btn btn-sm btn-ghost">JSON</a>
+            <button class="btn btn-sm btn-error btn-outline" hx-post="/debug/metrics/reset" hx-target="#metrics-tbody" hx-swap="innerHTML">
+                Reset
+            </button>
+        </div>
+    </div>
+
+    <div class="flex items-center gap-2 mb-4 text-sm opacity-70">
+        <div id="refresh-ring" class="radial-progress text-primary" style="--value:0; --size:1.1rem; --thickness:2px;"></div>
+        <span>refreshing every 3s</span>
+        <span id="last-updated" class="ml-auto"></span>
+    </div>
+
+    <table class="table table-zebra w-full">
+        <thead>
+            <tr>
+                <th class="cursor-pointer select-none" data-sort="name">Operation <span class="sort-arrow"></span></th>
+                <th class="cursor-pointer select-none" data-sort="count">Count <span class="sort-arrow"></span></th>
+                <th class="cursor-pointer select-none" data-sort="avg">Avg <span class="sort-arrow"></span></th>
+                <th class="cursor-pointer select-none" data-sort="p50">P50 <span class="sort-arrow"></span></th>
+                <th class="cursor-pointer select-none" data-sort="p95">P95 <span class="sort-arrow"></span></th>
+                <th class="cursor-pointer select-none" data-sort="max">Max <span class="sort-arrow"></span></th>
+            </tr>
+        </thead>
+        <tbody id="metrics-tbody" hx-get="/debug/metrics/rows" hx-trigger="load, every 3s [document.visibilityState === 'visible']" hx-swap="innerHTML">
+            <tr><td colspan="6">Loading...</td></tr>
+        </tbody>
+    </table>
+
+    <script>
+        (function () {
+            const tbody = document.getElementById('metrics-tbody');
+            const filterInput = document.getElementById('filter-input');
+            const lastUpdated = document.getElementById('last-updated');
+            const ring = document.getElementById('refresh-ring');
+            const POLL_MS = 3000;
+            let sortKey = 'name', sortDir = 1;
+
+            function applySort() {
+                const rows = Array.from(tbody.querySelectorAll('tr[data-name]'));
+                rows.sort((a, b) => {
+                    if (sortKey === 'name') return sortDir * a.dataset.name.localeCompare(b.dataset.name);
+                    return sortDir * ((parseFloat(a.dataset[sortKey]) || 0) - (parseFloat(b.dataset[sortKey]) || 0));
+                });
+                rows.forEach(row => tbody.appendChild(row));
+            }
+
+            function applyFilter() {
+                const term = filterInput.value.trim().toLowerCase();
+                tbody.querySelectorAll('tr[data-name]').forEach(row => {
+                    row.style.display = row.dataset.name.toLowerCase().includes(term) ? '' : 'none';
+                });
+            }
+
+            document.querySelectorAll('th[data-sort]').forEach(th => {
+                th.addEventListener('click', () => {
+                    sortDir = (sortKey === th.dataset.sort) ? sortDir * -1 : 1;
+                    sortKey = th.dataset.sort;
+                    document.querySelectorAll('.sort-arrow').forEach(a => a.textContent = '');
+                    th.querySelector('.sort-arrow').textContent = sortDir === 1 ? '▲' : '▼';
+                    applySort();
+                });
+            });
+
+            tbody.addEventListener('htmx:afterSwap', () => {
+                applySort();
+                applyFilter();
+                lastUpdated.textContent = 'updated ' + new Date().toLocaleTimeString();
+            });
+            filterInput.addEventListener('input', applyFilter);
+
+            // Countdown ring, synced to the real poll timing (not just a fixed animation)
+            let countdownStart = performance.now();
+            tbody.addEventListener('htmx:beforeRequest', () => { countdownStart = performance.now(); });
+            (function tick() {
+                const pct = Math.min(100, ((performance.now() - countdownStart) / POLL_MS) * 100);
+                ring.style.setProperty('--value', pct.toFixed(0));
+                requestAnimationFrame(tick);
+            })();
+        })();
+    </script>
+</body>
+</html>

@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any, Generator, List, Optional
 from queue import Queue
 from ..utils.id_encoding import encode_id
+from ..utils.metrics import timed
 import os
 import time
 import duckdb
@@ -66,6 +67,7 @@ class SubtitleDatabase(pykka.ThreadingActor):
         self.conn.close()
         return super().on_stop()
 
+    @timed("db:subtitle_pages")
     def get_subtitle_pages(self, search_subpath: str, search_string: str, page_length: int) -> int:
         cursor = self.conn.cursor()
         cursor.execute("SELECT COUNT(*) FROM subtitles WHERE video_id LIKE ? AND text ILIKE ?", [f"{search_subpath if search_subpath != '.' else ''}%", f"%{search_string}%"])
@@ -74,6 +76,7 @@ class SubtitleDatabase(pykka.ThreadingActor):
         cursor.close()
         return math.ceil(count / page_length)
 
+    @timed("db:search_subtitles")
     def search_subtitles(self, search_subpath: str, search_string: str, page: int, page_length: int | None) -> List[Subtitle]:
         offset = page * page_length if page_length is not None else None
         cursor = self.conn.cursor()
@@ -93,6 +96,7 @@ class SubtitleDatabase(pykka.ThreadingActor):
         cursor.close()
         return subs
 
+    @timed("db:get_subtitle_index")
     def get_subtitle_index(self, subtitle_id: str, search_subpath: str, search_string: str) -> Optional[int]:
         """Return the 0-based index (row number) of the given subtitle in the ordered result set
         filtered by search_subpath and search_string. Returns None if subtitle not found."""
@@ -116,6 +120,7 @@ class SubtitleDatabase(pykka.ThreadingActor):
             return 0
         return int(count_row[0])
 
+    @timed("db:find_subtitle")
     def find_subtitle(self, subtitle_id: str) -> Optional[Subtitle]:
         cursor = self.conn.cursor()
         cursor.execute("SELECT * FROM subtitles WHERE subtitle_id = ?", [subtitle_id])
@@ -140,6 +145,7 @@ class SubtitleDatabase(pykka.ThreadingActor):
         finally:
             cursor.close()
 
+    @timed("db:get_video_subtitles")
     def get_video_subtitles(self, video_id: str) -> List[Subtitle]:
         cursor = self.conn.cursor()
         cursor.execute("SELECT * FROM subtitles WHERE video_id = ?", [video_id])
@@ -156,6 +162,7 @@ class SubtitleDatabase(pykka.ThreadingActor):
         cursor.close()
         return subs
 
+    @timed("db:get_video")
     def get_video(self, video_id: str) -> Optional[Video]:
         cursor = self.conn.cursor()
         cursor.execute("SELECT * FROM videos WHERE video_id = ?", [video_id])
@@ -167,6 +174,7 @@ class SubtitleDatabase(pykka.ThreadingActor):
             (video_id, status, width, height, fail_reason) = row
             return Video(video_id, VideoScanStatus(status), width, height, fail_reason)
 
+    @timed("db:get_videos")
     def get_videos(self, video_id_prefix: str) -> List[Video]:
         cursor = self.conn.cursor()
         cursor.execute("SELECT * FROM videos WHERE video_id LIKE ?", [f"{video_id_prefix if video_id_prefix.__str__() != '.' else ''}%"])
@@ -174,12 +182,14 @@ class SubtitleDatabase(pykka.ThreadingActor):
         cursor.close()
         return videos
 
+    @timed("db:update_video")
     def update_video(self, video: Video):
         cursor = self.conn.cursor()
         cursor.execute("INSERT OR REPLACE INTO videos (video_id, status, width, height, fail_reason) VALUES (?, ?, ?, ?, ?)", [video.id, video.status.value, video.width, video.height, video.fail_reason])
         self.conn.commit()
         cursor.close()
 
+    @timed("db:insert_subtitles")
     def insert_subtitles(self, subtitles: List[Subtitle]):
         cursor = self.conn.cursor()
         cursor.begin()
