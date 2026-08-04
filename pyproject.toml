@@ -13,7 +13,7 @@ dependencies = [
     "gevent>=25.9.1",
     "pykka>=4.4.1",
     "duckdb>=1.4.4",
-    "sub2clip @ git+https://github.com/lpalinckx/sub2clip.git#v2.4.2#subdirectory=packages/sub2clip",
+    "sub2clip @ git+https://github.com/lpalinckx/sub2clip.git#v2.4.5#subdirectory=packages/sub2clip",
     "returns>=0.26.0"
 ]
 
