@@ -70,13 +70,9 @@ class SubtitleDatabase(pykka.ThreadingActor):
         cursor = self.conn.cursor()
         cursor.execute("SELECT COUNT(*) FROM subtitles WHERE video_id LIKE ? AND text ILIKE ?", [f"{search_subpath if search_subpath != '.' else ''}%", f"%{search_string}%"])
         row = cursor.fetchone()
-        count: int
-        if row is None:
-            count = 0
-        else:
-            count = row[0]
-        pages = math.ceil(count / page_length)
-        return pages
+        count = row[0] if row is not None else 0
+        cursor.close()
+        return math.ceil(count / page_length)
 
     def search_subtitles(self, search_subpath: str, search_string: str, page: int, page_length: int | None) -> List[Subtitle]:
         offset = page * page_length if page_length is not None else None
