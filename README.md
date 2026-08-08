@@ -86,6 +86,10 @@ CPU cores. Actual ffmpeg/ffprobe concurrency during scanning is still capped by
 - `DISABLE_THUMBNAILS`: set to `true`/`1`/`yes`/`on` to turn off thumbnail generation entirely —
 the UI won't request them and `/thumbnail` returns 404. Useful on memory-constrained hosts where
 even a lowered `MAX_CONCURRENT_FFMPEG` isn't enough headroom
+- `METRICS_PORT`: port for the `/metrics` (Prometheus) and `/debug/*` endpoints, served on their
+own listener separate from the main application so they can be kept off the public ingress
+without path-based blocking rules. Defaults to `9090`; set to `0` to disable the metrics server
+entirely
 
 These are automatically set when using `make run`, but you can override them:
 

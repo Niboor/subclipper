@@ -31,5 +31,8 @@ RUN pip install --upgrade pip
 RUN pip install -e .
 
 EXPOSE 8000
+# Metrics/debug endpoints (/metrics, /debug/*), served on a separate port so
+# they can be kept off the public ingress. See METRICS_PORT.
+EXPOSE 9090
 
 CMD ["gunicorn", "src.app:create_app()", "--worker-class", "gevent", "--threads", "10", "--workers", "1", "--log-level", "debug", "-b", ":8000", "--limit-request-line", "0"]

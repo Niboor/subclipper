@@ -2,7 +2,7 @@ import json
 import queue
 import shutil
 import threading
-from flask import Response, Blueprint, render_template, request, send_file, send_from_directory, make_response, jsonify, current_app, stream_with_context
+from flask import Response, Blueprint, render_template, request, send_file, send_from_directory, make_response, current_app, stream_with_context
 from pathlib import Path
 import logging
 from typing import Generator, NamedTuple, Optional
@@ -12,14 +12,12 @@ import os
 from collections.abc import Callable
 from itertools import chain
 from returns.result import Failure, Success
-from prometheus_client import generate_latest, CONTENT_TYPE_LATEST, REGISTRY
 
 import flask
 from jinja2 import Template
 
 from ..core.models import ClipSettings, VideoScanStatus, Video, Subtitle
 from ..utils.config import Config
-from ..utils import metrics
 from sub2clip.subtitles import Subtitle as SSubtitle
 
 logger = logging.getLogger(__name__)
@@ -450,47 +448,3 @@ def index(path: str):
 
         return resp
 
-#
-# Metrics
-#
-
-def _severity_thresholds(name: str) -> tuple[float, float]:
-    """(warning_ms, error_ms) — category-aware, since 'fast' means something
-    different for a DB lookup than for an ffmpeg subprocess."""
-    if name.startswith("ffmpeg:"):
-        return 2000, 5000
-    if name.startswith("db:"):
-        return 50, 250
-    if name.startswith("route:"):
-        return 300, 1500
-    if name.startswith("video_processor:"):
-        return 1000, 4000
-    return 500, 2000
-
-def _annotated_snapshot() -> dict:
-    data = metrics.snapshot()
-    for name, s in data.items():
-        warn, err = _severity_thresholds(name)
-        s['severity_p95'] = 'error' if s['p95_ms'] > err else ('warning' if s['p95_ms'] > warn else '')
-        s['severity_max'] = 'error' if s['max_ms'] > err else ('warning' if s['max_ms'] > warn else '')
-    return data
-
-@bp.route("/debug/metrics")
-def debug_metrics():
-    return render_template("metrics.html")
-
-@bp.route("/debug/metrics/rows")
-def debug_metrics_rows():
-    data = _annotated_snapshot()
-    if request.args.get("format") == "json":
-        return jsonify(data)
-    return render_template("_metrics_rows.html", stats=data)
-
-@bp.route("/debug/metrics/reset", methods=["POST"])
-def debug_metrics_reset():
-    metrics.reset()
-    return render_template("_metrics_rows.html", stats={})
-
-@bp.route("/metrics")
-def prometheus_metrics():
-    return Response(generate_latest(REGISTRY), mimetype=CONTENT_TYPE_LATEST)

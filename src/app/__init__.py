@@ -8,6 +8,7 @@ import time
 import datetime
 
 from ..utils.config import Config
+from .metrics_app import start_metrics_server
 
 def create_app():
     dictConfig({
@@ -57,5 +58,9 @@ def create_app():
             elapsed = time.perf_counter() - g._start_time
             metrics.record(f'route:{request.endpoint or request.path}', elapsed)
         return response
+
+    metrics_port = int(os.getenv('METRICS_PORT', '9090'))
+    if metrics_port != 0:
+        start_metrics_server(metrics_port)
 
     return app
