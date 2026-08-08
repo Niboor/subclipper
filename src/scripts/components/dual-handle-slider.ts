@@ -48,21 +48,40 @@ export class DualHandleSlider extends LitElement {
     this.originalEnd = this.originalEnd ? this.originalEnd : this.end
     this.currentStart = this.start;
     this.currentEnd = this.end;
-    const paddingMs = this.padding * 1000;
+    // `padding` is already in milliseconds (padding="10000" == 10s), matching the ms
+    // units used everywhere else here. It must NOT be multiplied again — doing so blew
+    // the window up to ~2.8h, so it spanned the entire file.
+    const paddingMs = this.padding;
     const totalClipLength = this.originalEnd - this.originalStart;
-    this.sliderStart = Math.max(0, this.originalStart - ((paddingMs - totalClipLength) / 2));
-    this.sliderEnd = this.originalEnd + ((paddingMs - totalClipLength) / 2);
+    if (paddingMs > totalClipLength) {
+      const extra = (paddingMs - totalClipLength) / 2;
+      this.sliderStart = Math.max(0, this.originalStart - extra);
+      this.sliderEnd = this.originalEnd + extra;
+    } else {
+      this.sliderStart = this.originalStart;
+      this.sliderEnd = this.originalEnd;
+    }
     this.requestUpdate();
   }
 
   private timeToPosition(time: number): number {
-    const totalRange = this.sliderEnd - this.sliderStart;
-    return (time - this.sliderStart) / totalRange;
+    // operate in seconds for UI positioning to match input fields
+    const sliderStartSec = this.sliderStart / 1000;
+    const sliderEndSec = this.sliderEnd / 1000;
+    const timeSec = time / 1000;
+    const totalRangeSec = sliderEndSec - sliderStartSec;
+    if (totalRangeSec === 0) return 0;
+    return (timeSec - sliderStartSec) / totalRangeSec;
   }
 
   private positionToTime(position: number): number {
-    const totalRange = this.sliderEnd - this.sliderStart;
-    return position * totalRange + this.sliderStart;
+    // position -> seconds, then convert to ms for internal storage
+    const sliderStartSec = this.sliderStart / 1000;
+    const sliderEndSec = this.sliderEnd / 1000;
+    const totalRangeSec = sliderEndSec - sliderStartSec;
+    if (totalRangeSec === 0) return this.sliderStart;
+    const timeSec = position * totalRangeSec + sliderStartSec;
+    return Math.round(timeSec * 1000);
   }
 
   private startDrag(handle: "start" | "end", event: MouseEvent | TouchEvent) {
