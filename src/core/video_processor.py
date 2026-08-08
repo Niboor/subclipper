@@ -6,27 +6,33 @@ import os
 import time
 from contextlib import contextmanager
 from ..utils.id_encoding import encode_id
+from ..utils.metrics import timed
+from ..utils.ffmpeg_concurrency import limit_ffmpeg_concurrency
 from returns.result import Result, Success, Failure
 
+from .subtitle_indexer import SubtitleIndexer
 from .models import Video, Subtitle, ClipSettings
-from sub2clip.sub2clip import generate
+from sub2clip.sub2clip import (generate, create_thumbnail)
 from sub2clip.generation import (ClipSettings as SubSettings, TextStyle, VideoFormat)
 from sub2clip.subtitles import (Subtitle as SSubtitle)
 
 logger = logging.getLogger(__name__)
 
 class VideoProcessor:
-    def __init__(self, search_path: Path, thumbnail_path: Path, font_name: str, languages: list[str]):
+    def __init__(self, search_path: Path, thumbnail_path: Path, font_name: str, languages: list[str], subtitle_indexer: SubtitleIndexer):
         self.search_path = search_path
         self.thumbnail_path = thumbnail_path
         self.font_name = font_name
         self.languages = languages
+        self.subtitle_indexer = subtitle_indexer
         logger.info(f"Initialized VideoProcessor with search_path: {search_path}, font_name: {font_name}, language filter: {languages}")
 
+    @timed("video_processor:generate_clip")
     def generate_clip(self, settings: ClipSettings, subs: list[Subtitle]) -> Result[Path, str]:
         """Generate a video clip with the given settings."""
         try:
             logger.debug(f"Starting clip generation with settings: {settings}")
+            start_ts = time.time()
             errors = settings.validate()
             if errors:
                 return Failure(str(errors))
@@ -57,48 +63,59 @@ class VideoProcessor:
                     end=end_time_ms,
                     text=settings.caption,
                 ) if settings.caption else None
-            
+
             ssubs = [sub.to_subtitle() for sub in subs]
 
-            err = generate(
-                clip_settings=clip_settings,
-                subtitles=ssubs,
-                caption=caption
-            )
+            with limit_ffmpeg_concurrency():
+                err = generate(
+                    clip_settings=clip_settings,
+                    subtitles=ssubs,
+                    caption=caption
+                )
             match err:
                 case Failure(err):
                     return Failure(err)
+            duration = time.time() - start_ts
+            logger.info(f"Clip generation completed in {duration:.2f}s for video {settings.video_id}")
             return Success(output_path)
         except Exception as e:
             logger.exception("Failed to generate clip")
             return Failure(e.__str__())
-        
+
+    def thumbnail_path_for(self, subtitle_id: str, resolution: int=50) -> Path:
+        """The on-disk cache path for a subtitle's thumbnail. Derived purely from the
+        subtitle id and resolution, so callers can check the cache without a DB lookup."""
+        filename = f"thumbnail-{encode_id(subtitle_id).replace('.', '-')}-{resolution}.webp"
+        return self.thumbnail_path / filename
+
+    @timed("video_processor:get_thumbnail")
     def get_thumbnail(self, subtitle: Subtitle, resolution: int=50) -> Result[Path, str]:
         """Get the thumbnail for the given subtitle at the set resolution"""
 
-        filename = f"thumbnail-{encode_id(subtitle.id).replace('.', '-')}-{resolution}.jpg"
-        output_path = self.thumbnail_path / filename
+        output_path = self.thumbnail_path_for(subtitle.id, resolution)
 
         if output_path.exists():
             return Success(output_path)
         else:
             return self._generate_thumbnail(subtitle.video_id, subtitle.start, output_path, resolution=resolution)
-        
+
     def _generate_thumbnail(self, video_id: str, timestamp: int, output_path: Path, resolution: int=50) -> Result[Path, str]:
         """Generate the stillframe for the given timestamp"""
-    
-        clip_settings = SubSettings(
-            input_path=self.search_path.joinpath(video_id),
-            output_path=output_path,
-            output_format=VideoFormat.JPG,
-            start=timestamp,
-            end=timestamp,
-            resolution=resolution
-        )
+        video = self.subtitle_indexer.get_video(video_id)
+        width, height = video.width, video.height
+        scaled_height = resolution
+        scaled_width  = 2 * round((width * scaled_height / height) / 2)
 
-        err = generate(clip_settings, subtitles=None, thumbnail=True)
-        match err:
-            case Failure(err):
-                return Failure(err)
+        with limit_ffmpeg_concurrency():
+            result = create_thumbnail(
+                self.search_path.joinpath(video_id),
+                output_path,
+                start_s=timestamp/1000.0,
+                width=scaled_width,
+                height=scaled_height
+            )
+        match result:
+            case Failure(e):
+                return Failure(e)
             case _:
                 return Success(output_path)

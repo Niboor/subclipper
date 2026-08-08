@@ -2,14 +2,18 @@ import logging
 from pathlib import Path
 from typing import Any, Generator, List, Optional
 from queue import Queue
+from concurrent.futures import ThreadPoolExecutor
 from ..utils.id_encoding import encode_id
+from ..utils.metrics import timed
+from ..utils.ffmpeg_concurrency import limit_ffmpeg_concurrency
 import os
+import time
 import duckdb
 import pykka
 import math
 import hashlib
 
-from sub2clip.sub2clip import (extract_subs, extract_subs_by_language)
+from sub2clip.sub2clip import (extract_subs, extract_subs_by_language, extract_dimensions)
 from .models import Video, VideoScanStatus, Subtitle
 from returns.result import Result, Failure, Success
 
@@ -32,6 +36,8 @@ class SubtitleDatabase(pykka.ThreadingActor):
             CREATE TABLE IF NOT EXISTS videos (
                 video_id TEXT NOT NULL PRIMARY KEY,
                 status TEXT CHECK( status IN ('UNSCANNED', 'SCANNING', 'SCANNED_SUCCESS', 'SCANNED_FAIL') ) NOT NULL,
+                width INTEGER NOT NULL,
+                height INTEGER NOT NULL,
                 fail_reason TEXT
             )
         ''')
@@ -63,22 +69,21 @@ class SubtitleDatabase(pykka.ThreadingActor):
         self.conn.close()
         return super().on_stop()
 
+    @timed("db:subtitle_pages")
     def get_subtitle_pages(self, search_subpath: str, search_string: str, page_length: int) -> int:
         cursor = self.conn.cursor()
         cursor.execute("SELECT COUNT(*) FROM subtitles WHERE video_id LIKE ? AND text ILIKE ?", [f"{search_subpath if search_subpath != '.' else ''}%", f"%{search_string}%"])
         row = cursor.fetchone()
-        count: int
-        if row is None:
-            count = 0
-        else:
-            count = row[0]
-        pages = math.ceil(count / page_length)
-        return pages
+        count = row[0] if row is not None else 0
+        cursor.close()
+        return math.ceil(count / page_length)
 
+    @timed("db:search_subtitles")
     def search_subtitles(self, search_subpath: str, search_string: str, page: int, page_length: int | None) -> List[Subtitle]:
         offset = page * page_length if page_length is not None else None
         cursor = self.conn.cursor()
-        cursor.execute(f"SELECT * FROM subtitles WHERE video_id LIKE ? AND text ILIKE ? LIMIT ?{ ' OFFSET ?' if offset is not None else '' }", [f"{search_subpath if search_subpath != '.' else ''}%", f"%{search_string}%", page_length, *([offset] if offset is not None else [])])
+        # Order results consistently by video_id then start_time so paging and rank calculations are stable
+        cursor.execute(f"SELECT * FROM subtitles WHERE video_id LIKE ? AND text ILIKE ? ORDER BY video_id, start_time LIMIT ?{ ' OFFSET ?' if offset is not None else '' }", [f"{search_subpath if search_subpath != '.' else ''}%", f"%{search_string}%", page_length, *([offset] if offset is not None else [])])
         rows = cursor.fetchall()
         subs = [Subtitle(
                 id=subtitle_id,
@@ -93,6 +98,28 @@ class SubtitleDatabase(pykka.ThreadingActor):
         cursor.close()
         return subs
 
+    @timed("db:get_subtitle_index")
+    def get_subtitle_index(self, subtitle_id: str, search_subpath: str, search_string: str) -> Optional[int]:
+        """Return the 0-based index (row number) of the given subtitle in the ordered result set
+        filtered by search_subpath and search_string. Returns None if subtitle not found."""
+        cursor = self.conn.cursor()
+        # ROW_NUMBER() computes the position using the same ORDER BY used in search_subtitles,
+        # so there's no need to separately look up the subtitle and re-derive its rank by hand.
+        cursor.execute(
+            '''
+            SELECT rank - 1 FROM (
+                SELECT subtitle_id, ROW_NUMBER() OVER (ORDER BY video_id, start_time) AS rank
+                FROM subtitles
+                WHERE video_id LIKE ? AND text ILIKE ?
+            ) WHERE subtitle_id = ?
+            ''',
+            [f"{search_subpath if search_subpath != '.' else ''}%", f"%{search_string}%", subtitle_id]
+        )
+        row = cursor.fetchone()
+        cursor.close()
+        return int(row[0]) if row is not None else None
+
+    @timed("db:find_subtitle")
     def find_subtitle(self, subtitle_id: str) -> Optional[Subtitle]:
         cursor = self.conn.cursor()
         cursor.execute("SELECT * FROM subtitles WHERE subtitle_id = ?", [subtitle_id])
@@ -117,6 +144,7 @@ class SubtitleDatabase(pykka.ThreadingActor):
         finally:
             cursor.close()
 
+    @timed("db:get_video_subtitles")
     def get_video_subtitles(self, video_id: str) -> List[Subtitle]:
         cursor = self.conn.cursor()
         cursor.execute("SELECT * FROM subtitles WHERE video_id = ?", [video_id])
@@ -133,6 +161,7 @@ class SubtitleDatabase(pykka.ThreadingActor):
         cursor.close()
         return subs
 
+    @timed("db:get_video")
     def get_video(self, video_id: str) -> Optional[Video]:
         cursor = self.conn.cursor()
         cursor.execute("SELECT * FROM videos WHERE video_id = ?", [video_id])
@@ -141,22 +170,25 @@ class SubtitleDatabase(pykka.ThreadingActor):
         if row is None:
             return None
         else:
-            (video_id, status, fail_reason) = row
-            return Video(video_id, VideoScanStatus(status), fail_reason)
+            (video_id, status, width, height, fail_reason) = row
+            return Video(video_id, VideoScanStatus(status), width, height, fail_reason)
 
+    @timed("db:get_videos")
     def get_videos(self, video_id_prefix: str) -> List[Video]:
         cursor = self.conn.cursor()
         cursor.execute("SELECT * FROM videos WHERE video_id LIKE ?", [f"{video_id_prefix if video_id_prefix.__str__() != '.' else ''}%"])
-        videos = [Video(video_id, VideoScanStatus(status), fail_reason) for (video_id, status, fail_reason) in cursor.fetchall()]
+        videos = [Video(video_id, VideoScanStatus(status), width, height, fail_reason) for (video_id, status, width, height, fail_reason) in cursor.fetchall()]
         cursor.close()
         return videos
 
+    @timed("db:update_video")
     def update_video(self, video: Video):
         cursor = self.conn.cursor()
-        cursor.execute("INSERT OR REPLACE INTO videos (video_id, status, fail_reason) VALUES (?, ?, ?)", [video.id, video.status.value, video.fail_reason])
+        cursor.execute("INSERT OR REPLACE INTO videos (video_id, status, width, height, fail_reason) VALUES (?, ?, ?, ?, ?)", [video.id, video.status.value, video.width, video.height, video.fail_reason])
         self.conn.commit()
         cursor.close()
 
+    @timed("db:insert_subtitles")
     def insert_subtitles(self, subtitles: List[Subtitle]):
         cursor = self.conn.cursor()
         cursor.begin()
@@ -206,30 +238,44 @@ class SubtitleScanner(pykka.ThreadingActor):
                 video: Optional[Video] = self.db.get_video(video_id).get()
                 if video is None:
                     self._update_video_status(video_id, VideoScanStatus.UNSCANNED)
-                    videos.append(Video(video_id, VideoScanStatus.UNSCANNED, None))
+                    videos.append(Video(video_id, VideoScanStatus.UNSCANNED, width=-1, height=-1, fail_reason=None))
                 else:
                     videos.append(video)
-        scanned_videos = [video for video in videos if video.already_scanned()]
-        logger.info(f"Found {len(videos)} files, {len(scanned_videos)} already scanned")
-        for i, video in enumerate(videos):
-            try:
-                if video.already_scanned():
-                    logger.info(f"{i+1}/{len(videos)}: Skipping file {video.id} as it is already present in the cache")
-                else:
-                    logger.info(f"{i+1}/{len(videos)}: Scanning file {video.id}")
-                    self._update_video_status(video.id, VideoScanStatus.SCANNING)
-                    subtitles = self._extract_subtitles(Path(video.id))
-                    self.db.insert_subtitles(subtitles)
-                    self._update_video_status(video.id, VideoScanStatus.SCANNED_SUCCESS)
-            except Exception as e:
-                logger.exception(e)
-                self._update_video_status(video.id, VideoScanStatus.SCANNED_FAIL, e.__str__())
+        unscanned = [video for video in videos if not video.already_scanned()]
+        logger.info(f"Found {len(videos)} files, {len(videos) - len(unscanned)} already scanned, {len(unscanned)} to scan")
+
+        max_workers = int(os.getenv("SCAN_WORKERS", str(os.cpu_count() or 4)))
+        with ThreadPoolExecutor(max_workers=max_workers) as pool:
+            # list() forces on_start to block until every video has been scanned,
+            # matching the previous sequential behaviour.
+            list(pool.map(self._scan_one, unscanned))
+
         logger.info("Scan complete")
 
-    def _update_video_status(self, video_id: str, status: VideoScanStatus, fail_reason: str | None = None):
+    def _scan_one(self, video: Video) -> None:
+        try:
+            logger.info(f"Scanning file {video.id}")
+            self._update_video_status(video.id, VideoScanStatus.SCANNING)
+            subtitles = self._extract_subtitles(Path(video.id))
+            self.db.insert_subtitles(subtitles)
+            width = height = None
+            with limit_ffmpeg_concurrency():
+                dimensions = extract_dimensions(self.root_path.joinpath(Path(video.id)))
+            match dimensions:
+                case Failure(e):
+                    logger.error(f'Failed to extract dimensions from video {video.id}: {e}')
+                    raise Exception(e)
+                case Success((width, height)):
+                    pass
+            self._update_video_status(video.id, VideoScanStatus.SCANNED_SUCCESS, width=width, height=height)
+        except Exception as e:
+            logger.exception(e)
+            self._update_video_status(video.id, VideoScanStatus.SCANNED_FAIL, fail_reason=e.__str__())
+
+    def _update_video_status(self, video_id: str, status: VideoScanStatus, width: int =-1, height: int =-1, fail_reason: str | None = None):
         logger.debug(f"updating video status of {video_id} to {status} (errors: {fail_reason})")
 
-        video = Video(video_id, status, fail_reason)
+        video = Video(video_id, status, width=width, height=height, fail_reason=fail_reason)
 
         self.db.update_video(video)
         self._video_update_listener.put(video)
@@ -246,13 +292,15 @@ class SubtitleScanner(pykka.ThreadingActor):
         absolute_video_path = self.root_path.joinpath(video_id)
         try:
             logger.debug(f"Extracting subtitles from {video_id}")
+            start_ts = time.time()
             langs = [lang.strip().lower() for lang in self.languages] if self.languages else None
-            subtitles = extract_subs_by_language(absolute_video_path, langs) if langs else extract_subs(absolute_video_path)
+            with limit_ffmpeg_concurrency():
+                subtitles = extract_subs_by_language(absolute_video_path, langs) if langs else extract_subs(absolute_video_path)
             # Significantly reduces id length of subtitle while remaining unique per video
             video_id_md5 = hashlib.md5(video_id.__str__().encode("utf-8")).hexdigest()[0:8]
             match subtitles:
                 case Success(subtitles):
-                    return [
+                    result = [
                         Subtitle.from_subtitle(
                             sub,
                             id=encode_id(f"{video_id_md5}/{idx}"),
@@ -262,6 +310,9 @@ class SubtitleScanner(pykka.ThreadingActor):
                         )
                         for idx, sub in enumerate(subtitles)
                     ]
+                    duration = time.time() - start_ts
+                    logger.info(f"Extracted {len(result)} subtitles from {video_id} in {duration:.2f}s")
+                    return result
                 case Failure(err):
                     raise Exception(err)
                 case _:
@@ -314,9 +365,12 @@ class SubtitleIndexer():
     def search_subtitles(self, search_subpath: str, search_string: str, page: int, page_length: int | None) -> List[Subtitle]:
         return self.db.search_subtitles(search_subpath, search_string, page, page_length).get()
 
+    def get_subtitle_index(self, subtitle_id: str, search_subpath: str, search_string: str) -> Optional[int]:
+        return self.db.get_subtitle_index(subtitle_id, search_subpath, search_string).get()
+
     def find_subtitle(self, subtitle_id: str) -> Optional[Subtitle]:
         return self.db.find_subtitle(subtitle_id).get()
-    
+
     def get_video_subtitles(self, video_id: str):
         return self.db.get_video_subtitles(video_id).get()
 

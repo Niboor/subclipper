@@ -1,7 +1,8 @@
 import json
 import queue
+import shutil
 import threading
-from flask import Response, Blueprint, render_template, request, send_file, send_from_directory, make_response, jsonify, current_app, stream_with_context
+from flask import Response, Blueprint, render_template, request, send_file, send_from_directory, make_response, current_app, stream_with_context
 from pathlib import Path
 import logging
 from typing import Generator, NamedTuple, Optional
@@ -245,15 +246,21 @@ def current_path(path):
 @bp.route("/locate/<subtitle_id>")
 def locate(subtitle_id: str):
     page_length = request.args.get("page_length", config.default_page_length, type=int)
-    subs = config.subtitle_indexer.search_subtitles('', '', 0, None)
-    sub_pages = [subs[x:x+page_length] for x in range(0, len(subs), page_length)]
-    sub_page = [i for i, page in enumerate(sub_pages) if len([sub for sub in page if sub.id == subtitle_id]) > 0] if sub_pages else []
+    # Ensure sensible page length
+    if page_length is None or page_length <= 0:
+        page_length = config.default_page_length
 
-    if len(sub_page) == 0:
+    # Compute the subtitle's 0-based index using a DB-side count and derive the page
+    search_subpath = ''
+    search_string = ''
+    index = config.subtitle_indexer.get_subtitle_index(subtitle_id, search_subpath, search_string)
+    if index is None:
         return f"no subtitle with id {subtitle_id} found", 404
 
+    page_num = int(index) // int(page_length)
+
     resp = flask.Response("OK")
-    fragment_path = f"/?page={sub_page[0]}&page_length={page_length}#id{subtitle_id}"
+    fragment_path = f"/?page={page_num}&page_length={page_length}#id{subtitle_id}"
     resp.headers['HX-Location'] = json.dumps({"path": fragment_path, "target": "main"})
     resp.status_code = 200
 
@@ -265,7 +272,7 @@ def sub_form(subtitle_id: str):
     sub = config.subtitle_indexer.find_subtitle(subtitle_id)
     if sub is None:
         return "Subtitle not found", 404
-    
+
     sub_data = sub.to_sub_data(active=True)
 
     return cached_render_template(
@@ -287,11 +294,11 @@ def sub_data(subtitle_id: str):
         new_sub = config.subtitle_indexer.find_subtitle(subtitle_id)
         if new_sub is None:
             return f"Subtitle with id {subtitle_id} not found", 404
-        
+
         new_subs = [*subs, new_sub]
 
     new_subs.sort(key=lambda sub: sub.get_ordering())
-    
+
     subs_data = [sub.to_sub_data(active=sub.id == subtitle_id) for sub in new_subs]
 
     return cached_render_template(
@@ -300,21 +307,28 @@ def sub_data(subtitle_id: str):
         settings=settings,
         errs=None,
     )
-    
+
 @bp.route("/thumbnail/<path:subtitle_id>")
 def thumbnail(subtitle_id: str):
+    if not config.thumbnails_enabled:
+        return "Thumbnails are disabled", 404
+
     resolution = request.args.get("resolution", 50, type=int)
-    subtitle = config.subtitle_indexer.find_subtitle(subtitle_id)
-    if subtitle is None:
-        return f"Subtitle with id {subtitle_id} not found", 404
-    path = config.video_processor.get_thumbnail(subtitle, resolution=resolution)
-    match path:
-        case Failure(err):
-            return f"{err}", 500
-        case Success(path):
-            return send_from_directory(path.parent, path.name)
-        case _:
-            raise Exception("unreachable")
+
+    cache_path = config.video_processor.thumbnail_path_for(subtitle_id, resolution)
+    if not cache_path.exists():
+        subtitle = config.subtitle_indexer.find_subtitle(subtitle_id)
+        if subtitle is None:
+            return f"Subtitle with id {subtitle_id} not found", 404
+        match config.video_processor.get_thumbnail(subtitle, resolution=resolution):
+            case Failure(err):
+                return f"{err}", 500
+            case Success(_):
+                pass
+
+    response = send_from_directory(cache_path.parent, cache_path.name)
+    response.headers['Cache-Control'] = 'public, max-age=31536000, immutable'
+    return response
 
 def get_default_settings():
     return {
@@ -375,9 +389,9 @@ def get_gif():
                 if output_path and output_path.exists():
                     tmp_dir = output_path.parent
                     try:
-                        output_path.unlink()
-                        (tmp_dir / 'clip.mp4').unlink(missing_ok=True)
-                        tmp_dir.rmdir()
+                        # Use shutil.rmtree to forcefully remove directory and all contents
+                        # This handles cases where sub2clip or other processes leave files
+                        shutil.rmtree(tmp_dir, ignore_errors=True)
                     except Exception as e:
                         logger.warning(f"Failed to clean up temporary files: {e}")
         case _:
@@ -405,9 +419,10 @@ def index(path: str):
             single_show_name=config.single_show_name,
         )
     else:
-        page = page or 0
+        requested_page = page or 0
         search_subpath = (path if path != '/' else '') or ''
         pages = config.subtitle_indexer.get_subtitle_pages(search_subpath, filter, page_length)
+        page = max(0, min(requested_page, pages - 1)) if pages > 0 else 0
         subs = config.subtitle_indexer.search_subtitles(search_subpath, filter, page, page_length)
 
         template = "root.html" if hx_request is None else "subtitles.html"
@@ -420,9 +435,16 @@ def index(path: str):
             single_show_name=config.single_show_name,
 
             subs=subs,
+            page=page,
             page_length=page_length,
             pages=pages,
         )
         resp.headers['HX-Trigger-After-Settle'] = 'refetch-current-path'
 
+        if page != requested_page:
+            corrected_args = request.args.copy()
+            corrected_args['page'] = str(page)
+            resp.headers['HX-Replace-Url'] = f"{request.path}?{urllib.parse.urlencode(list(corrected_args.items(multi=True)))}"
+
         return resp
+

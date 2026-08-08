@@ -1,0 +1,12 @@
+{% for name, s in stats.items() %}
+<tr data-name="{{ name }}" data-count="{{ s.count }}" data-avg="{{ s.avg_ms }}" data-p50="{{ s.p50_ms }}" data-p95="{{ s.p95_ms }}" data-max="{{ s.max_ms }}">
+    <td class="font-mono text-sm">{{ name }}</td>
+    <td>{{ s.count }}</td>
+    <td>{{ "%.1f"|format(s.avg_ms) }} ms</td>
+    <td>{{ "%.1f"|format(s.p50_ms) }} ms</td>
+    <td class="{{ 'text-warning' if s.severity_p95 == 'warning' else 'text-error font-bold' if s.severity_p95 == 'error' else '' }}">{{ "%.1f"|format(s.p95_ms) }} ms</td>
+    <td class="{{ 'text-warning' if s.severity_max == 'warning' else 'text-error font-bold' if s.severity_max == 'error' else '' }}">{{ "%.1f"|format(s.max_ms) }} ms</td>
+</tr>
+{% else %}
+<tr><td colspan="6" class="text-center opacity-60 py-8">No data yet — go use the app.</td></tr>
+{% endfor %}

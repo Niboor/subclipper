@@ -6,6 +6,8 @@ def test_video_creation():
     video = Video(
         id="/path/to/video",
         status=VideoScanStatus.SCANNED_SUCCESS,
+        width=1920,
+        height=1080,
         fail_reason=None
     )
     assert video.id == "/path/to/video"

@@ -24,6 +24,7 @@ class Config:
         self.font_name = font
         self.languages = self._get_optional_env('SUB_LANG', None)
         self.single_show_name = self._get_optional_env('SINGLE_SHOW_NAME', None)
+        self.thumbnails_enabled = self._get_optional_env('DISABLE_THUMBNAILS', 'false').strip().lower() not in ('1', 'true', 'yes', 'on')
         logger.info(f"Initialized Config with search_path: {self.search_path}, db_path: {self.db_path}, font_name: {self.font_name}")
         self._video_processor = None
         self.subtitle_indexer = SubtitleIndexer(self.search_path, self.db_path, self.languages)
@@ -49,5 +50,5 @@ class Config:
     def video_processor(self):
         """Get the VideoProcessor instance, creating it if necessary."""
         if self._video_processor is None:
-            self._video_processor = VideoProcessor(self.search_path, self.thumbnail_path, self.font_name, self.languages)
+            self._video_processor = VideoProcessor(self.search_path, self.thumbnail_path, self.font_name, self.languages, self.subtitle_indexer)
         return self._video_processor

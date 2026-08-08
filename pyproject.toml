@@ -13,8 +13,9 @@ dependencies = [
     "gevent>=25.9.1",
     "pykka>=4.4.1",
     "duckdb>=1.4.4",
-    "sub2clip @ git+https://github.com/lpalinckx/sub2clip.git#v2.4.1#subdirectory=packages/sub2clip",
-    "returns>=0.26.0"
+    "sub2clip @ git+https://github.com/lpalinckx/sub2clip.git#v2.4.7#subdirectory=packages/sub2clip",
+    "returns>=0.26.0",
+    "prometheus-client>=0.20.0"
 ]
 
 [project.optional-dependencies]

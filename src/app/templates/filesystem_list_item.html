@@ -88,7 +88,7 @@
             </div>
         </summary>
         <ul>
-            {% for child in full_path.iterdir() %}
+            {% for child in full_path.iterdir()|sort(attribute='name')  %}
             {% with full_path=child, root_path=root_path %}
                 {% include "filesystem_list_item.html" %}
             {% endwith %}

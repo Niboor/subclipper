@@ -31,6 +31,7 @@ venv:
 
 install: venv
 	@echo "Installing dependencies..."
+	$(PIP) install --upgrade pip
 	$(PIP) install -e ".[dev]"
 	@echo "Dependencies installed."
 
@@ -60,7 +61,7 @@ docker-build:
 
 docker-run:
 	@echo "Running Docker container..."
-	docker run -p 8000:8000 \
+	docker run -p 8000:8000 -p 9090:9090 \
 		-e SEARCH_PATH=/app/src/samples \
 		$(DOCKER_IMAGE):$(DOCKER_TAG)
 
