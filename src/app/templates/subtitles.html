@@ -60,7 +60,7 @@
     <div class="flex-none join flex flex-row justify-safe-center min-h-12 overflow-x-auto">
         {% for i in range(0, pages) %}
             <button
-                class="join-item btn {{ 'btn-active' if request.args.get('page') == i|string or (request.args.get('page') is none and loop.first) else '' }}"
+                class="join-item btn {{ 'btn-active' if i == page else '' }}"
                 hx-get="/?page={{ i }}"
                 hx-target="main"
                 hx-replace-url="true"

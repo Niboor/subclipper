@@ -421,9 +421,10 @@ def index(path: str):
             single_show_name=config.single_show_name,
         )
     else:
-        page = page or 0
+        requested_page = page or 0
         search_subpath = (path if path != '/' else '') or ''
         pages = config.subtitle_indexer.get_subtitle_pages(search_subpath, filter, page_length)
+        page = max(0, min(requested_page, pages - 1)) if pages > 0 else 0
         subs = config.subtitle_indexer.search_subtitles(search_subpath, filter, page, page_length)
 
         template = "root.html" if hx_request is None else "subtitles.html"
@@ -436,10 +437,16 @@ def index(path: str):
             single_show_name=config.single_show_name,
 
             subs=subs,
+            page=page,
             page_length=page_length,
             pages=pages,
         )
         resp.headers['HX-Trigger-After-Settle'] = 'refetch-current-path'
+
+        if page != requested_page:
+            corrected_args = request.args.copy()
+            corrected_args['page'] = str(page)
+            resp.headers['HX-Replace-Url'] = f"{request.path}?{urllib.parse.urlencode(list(corrected_args.items(multi=True)))}"
 
         return resp
 
