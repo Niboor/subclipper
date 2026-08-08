@@ -16,7 +16,7 @@ def sample_video_path():
 @pytest.fixture
 def video_processor(sample_video_path: Path):
     tmp_thumbnail_dir = Path(tempfile.mkdtemp())
-    return VideoProcessor(sample_video_path.parent, tmp_thumbnail_dir, "Arial", [])
+    return VideoProcessor(sample_video_path.parent, tmp_thumbnail_dir, "Arial", [], MagicMock())
 
 def test_generate_clip(video_processor: VideoProcessor, sample_video_path: Path):
     # Create test data
