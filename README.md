@@ -67,6 +67,25 @@ The application also has the following optional environment variables:
 - `SUB_LANG`: a list of ISO 639 language codes to filter subtitles based on language.
 Precedence goes from left to right, if no matching subtitle is found, an error is thrown for that video file.
 If left empty, the first subtitle track of each file is used instead.
+- `THUMBNAIL_PATH`: directory where generated thumbnails are cached on disk, defaults to a
+new temporary directory each time the app starts
+- `DB_PATH`: path to the DuckDB database file used to store the subtitle index, defaults to
+an in-memory database (not persisted across restarts) if not set
+- `SINGLE_SHOW_NAME`: if set, the homepage skips the file browser and goes straight to this
+show's subtitles
+- `MAX_CONCURRENT_FFMPEG`: maximum number of ffmpeg/ffprobe subprocesses allowed to run at
+once, defaults to 4. Each ffmpeg process holds its own decode buffers — a single-frame thumbnail
+grab from a real 1080p episode was measured using 90-190MB RSS depending on how many decode
+threads ffmpeg auto-selects. On a memory-constrained host (e.g. a container with `--memory` set),
+lower this — the default of 4 can exceed a 512MB limit and get the process OOM-killed when a
+burst of thumbnail requests comes in (e.g. loading a page of 50 subtitles). Lowering to 1-2
+trades thumbnail-generation throughput for a much smaller peak memory footprint
+- `SCAN_WORKERS`: number of videos scanned concurrently on startup, defaults to the number of
+CPU cores. Actual ffmpeg/ffprobe concurrency during scanning is still capped by
+`MAX_CONCURRENT_FFMPEG`
+- `DISABLE_THUMBNAILS`: set to `true`/`1`/`yes`/`on` to turn off thumbnail generation entirely —
+the UI won't request them and `/thumbnail` returns 404. Useful on memory-constrained hosts where
+even a lowered `MAX_CONCURRENT_FFMPEG` isn't enough headroom
 
 These are automatically set when using `make run`, but you can override them:
 
