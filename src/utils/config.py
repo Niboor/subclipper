@@ -24,6 +24,7 @@ class Config:
         self.font_name = font
         self.languages = self._get_optional_env('SUB_LANG', None)
         self.single_show_name = self._get_optional_env('SINGLE_SHOW_NAME', None)
+        self.thumbnails_enabled = self._get_optional_env('DISABLE_THUMBNAILS', 'false').strip().lower() not in ('1', 'true', 'yes', 'on')
         logger.info(f"Initialized Config with search_path: {self.search_path}, db_path: {self.db_path}, font_name: {self.font_name}")
         self._video_processor = None
         self.subtitle_indexer = SubtitleIndexer(self.search_path, self.db_path, self.languages)

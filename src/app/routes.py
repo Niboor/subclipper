@@ -312,20 +312,25 @@ def sub_data(subtitle_id: str):
 
 @bp.route("/thumbnail/<path:subtitle_id>")
 def thumbnail(subtitle_id: str):
+    if not config.thumbnails_enabled:
+        return "Thumbnails are disabled", 404
+
     resolution = request.args.get("resolution", 50, type=int)
-    subtitle = config.subtitle_indexer.find_subtitle(subtitle_id)
-    if subtitle is None:
-        return f"Subtitle with id {subtitle_id} not found", 404
-    path = config.video_processor.get_thumbnail(subtitle, resolution=resolution)
-    match path:
-        case Failure(err):
-            return f"{err}", 500
-        case Success(path):
-            response = send_from_directory(path.parent, path.name)
-            response.headers['Cache-Control'] = 'public, max-age=31536000, immutable'
-            return response
-        case _:
-            raise Exception("unreachable")
+
+    cache_path = config.video_processor.thumbnail_path_for(subtitle_id, resolution)
+    if not cache_path.exists():
+        subtitle = config.subtitle_indexer.find_subtitle(subtitle_id)
+        if subtitle is None:
+            return f"Subtitle with id {subtitle_id} not found", 404
+        match config.video_processor.get_thumbnail(subtitle, resolution=resolution):
+            case Failure(err):
+                return f"{err}", 500
+            case Success(_):
+                pass
+
+    response = send_from_directory(cache_path.parent, cache_path.name)
+    response.headers['Cache-Control'] = 'public, max-age=31536000, immutable'
+    return response
 
 def get_default_settings():
     return {

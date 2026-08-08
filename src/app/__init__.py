@@ -39,8 +39,9 @@ def create_app():
     app.template_folder = str(Path(__file__).parent / 'templates')
     app.static_folder = str(Path(__file__).parent / 'static')
 
-    from .routes import bp
+    from .routes import bp, config
     app.register_blueprint(bp)
+    app.jinja_env.globals.update(thumbnails_enabled=config.thumbnails_enabled)
 
     @app.template_filter('format_duration')
     def format_duration(s):

@@ -20,6 +20,7 @@
                         hx-target="#modal-container"
                         preserve-params="false"
                     >
+                        {% if thumbnails_enabled %}
                         <div class="relative min-w-[88px] w-[88px] h-[50px] overflow-hidden rounded shrink-0">
                             <div class="skeleton absolute inset-0 w-full h-full"></div>
                             <img
@@ -32,6 +33,7 @@
                                 onerror="this.previousElementSibling.classList.add('bg-error/20')"
                             />
                         </div>
+                        {% endif %}
                         <div class="list-col-grow flex flex-col items-start">
                             <div class="flex flex-row gap-2">
                                 <div class="text-xs uppercase font-semibold opacity-60">{{ sub.video_id }}</div>
