@@ -31,6 +31,7 @@ venv:
 
 install: venv
 	@echo "Installing dependencies..."
+	$(PIP) install --upgrade pip
 	$(PIP) install -e ".[dev]"
 	@echo "Dependencies installed."
 
