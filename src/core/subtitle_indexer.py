@@ -103,24 +103,21 @@ class SubtitleDatabase(pykka.ThreadingActor):
         """Return the 0-based index (row number) of the given subtitle in the ordered result set
         filtered by search_subpath and search_string. Returns None if subtitle not found."""
         cursor = self.conn.cursor()
-        cursor.execute("SELECT video_id, start_time FROM subtitles WHERE subtitle_id = ?", [subtitle_id])
-        row = cursor.fetchone()
-        if row is None:
-            cursor.close()
-            return None
-
-        video_id, start_time = row
-
-        # Count rows that come before this subtitle using the same ORDER BY used in search_subtitles
+        # ROW_NUMBER() computes the position using the same ORDER BY used in search_subtitles,
+        # so there's no need to separately look up the subtitle and re-derive its rank by hand.
         cursor.execute(
-            "SELECT COUNT(*) FROM subtitles WHERE video_id LIKE ? AND text ILIKE ? AND (video_id < ? OR (video_id = ? AND start_time < ?))",
-            [f"{search_subpath if search_subpath != '.' else ''}%", f"%{search_string}%", video_id, video_id, start_time]
+            '''
+            SELECT rank - 1 FROM (
+                SELECT subtitle_id, ROW_NUMBER() OVER (ORDER BY video_id, start_time) AS rank
+                FROM subtitles
+                WHERE video_id LIKE ? AND text ILIKE ?
+            ) WHERE subtitle_id = ?
+            ''',
+            [f"{search_subpath if search_subpath != '.' else ''}%", f"%{search_string}%", subtitle_id]
         )
-        count_row = cursor.fetchone()
+        row = cursor.fetchone()
         cursor.close()
-        if count_row is None:
-            return 0
-        return int(count_row[0])
+        return int(row[0]) if row is not None else None
 
     @timed("db:find_subtitle")
     def find_subtitle(self, subtitle_id: str) -> Optional[Subtitle]:
