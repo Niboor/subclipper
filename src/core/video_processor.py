@@ -7,6 +7,7 @@ import time
 from contextlib import contextmanager
 from ..utils.id_encoding import encode_id
 from ..utils.metrics import timed
+from ..utils.ffmpeg_concurrency import limit_ffmpeg_concurrency
 from returns.result import Result, Success, Failure
 
 from .subtitle_indexer import SubtitleIndexer
@@ -65,11 +66,12 @@ class VideoProcessor:
 
             ssubs = [sub.to_subtitle() for sub in subs]
 
-            err = generate(
-                clip_settings=clip_settings,
-                subtitles=ssubs,
-                caption=caption
-            )
+            with limit_ffmpeg_concurrency():
+                err = generate(
+                    clip_settings=clip_settings,
+                    subtitles=ssubs,
+                    caption=caption
+                )
             match err:
                 case Failure(err):
                     return Failure(err)
@@ -80,12 +82,17 @@ class VideoProcessor:
             logger.exception("Failed to generate clip")
             return Failure(e.__str__())
 
+    def thumbnail_path_for(self, subtitle_id: str, resolution: int=50) -> Path:
+        """The on-disk cache path for a subtitle's thumbnail. Derived purely from the
+        subtitle id and resolution, so callers can check the cache without a DB lookup."""
+        filename = f"thumbnail-{encode_id(subtitle_id).replace('.', '-')}-{resolution}.webp"
+        return self.thumbnail_path / filename
+
     @timed("video_processor:get_thumbnail")
     def get_thumbnail(self, subtitle: Subtitle, resolution: int=50) -> Result[Path, str]:
         """Get the thumbnail for the given subtitle at the set resolution"""
 
-        filename = f"thumbnail-{encode_id(subtitle.id).replace('.', '-')}-{resolution}.webp"
-        output_path = self.thumbnail_path / filename
+        output_path = self.thumbnail_path_for(subtitle.id, resolution)
 
         if output_path.exists():
             return Success(output_path)
@@ -99,13 +106,14 @@ class VideoProcessor:
         scaled_height = resolution
         scaled_width  = 2 * round((width * scaled_height / height) / 2)
 
-        result = create_thumbnail(
-            self.search_path.joinpath(video_id),
-            output_path,
-            start_s=timestamp/1000.0,
-            width=scaled_width,
-            height=scaled_height
-        )
+        with limit_ffmpeg_concurrency():
+            result = create_thumbnail(
+                self.search_path.joinpath(video_id),
+                output_path,
+                start_s=timestamp/1000.0,
+                width=scaled_width,
+                height=scaled_height
+            )
         match result:
             case Failure(e):
                 return Failure(e)

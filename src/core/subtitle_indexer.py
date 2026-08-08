@@ -2,8 +2,10 @@ import logging
 from pathlib import Path
 from typing import Any, Generator, List, Optional
 from queue import Queue
+from concurrent.futures import ThreadPoolExecutor
 from ..utils.id_encoding import encode_id
 from ..utils.metrics import timed
+from ..utils.ffmpeg_concurrency import limit_ffmpeg_concurrency
 import os
 import time
 import duckdb
@@ -242,29 +244,36 @@ class SubtitleScanner(pykka.ThreadingActor):
                     videos.append(Video(video_id, VideoScanStatus.UNSCANNED, width=-1, height=-1, fail_reason=None))
                 else:
                     videos.append(video)
-        scanned_videos = [video for video in videos if video.already_scanned()]
-        logger.info(f"Found {len(videos)} files, {len(scanned_videos)} already scanned")
-        for i, video in enumerate(videos):
-            try:
-                if video.already_scanned():
-                    logger.info(f"{i+1}/{len(videos)}: Skipping file {video.id} as it is already present in the cache")
-                else:
-                    logger.info(f"{i+1}/{len(videos)}: Scanning file {video.id}")
-                    self._update_video_status(video.id, VideoScanStatus.SCANNING)
-                    subtitles = self._extract_subtitles(Path(video.id))
-                    self.db.insert_subtitles(subtitles)
-                    width = height = None
-                    match extract_dimensions(self.root_path.joinpath(Path(video.id))):
-                        case Failure(e):
-                            logger.error(f'Failed to extract dimensions from video {video.id}: {e}')
-                            raise Exception(e)
-                        case Success((width, height)):
-                            pass
-                    self._update_video_status(video.id, VideoScanStatus.SCANNED_SUCCESS, width=width, height=height)
-            except Exception as e:
-                logger.exception(e)
-                self._update_video_status(video.id, VideoScanStatus.SCANNED_FAIL, fail_reason=e.__str__())
+        unscanned = [video for video in videos if not video.already_scanned()]
+        logger.info(f"Found {len(videos)} files, {len(videos) - len(unscanned)} already scanned, {len(unscanned)} to scan")
+
+        max_workers = int(os.getenv("SCAN_WORKERS", str(os.cpu_count() or 4)))
+        with ThreadPoolExecutor(max_workers=max_workers) as pool:
+            # list() forces on_start to block until every video has been scanned,
+            # matching the previous sequential behaviour.
+            list(pool.map(self._scan_one, unscanned))
+
         logger.info("Scan complete")
+
+    def _scan_one(self, video: Video) -> None:
+        try:
+            logger.info(f"Scanning file {video.id}")
+            self._update_video_status(video.id, VideoScanStatus.SCANNING)
+            subtitles = self._extract_subtitles(Path(video.id))
+            self.db.insert_subtitles(subtitles)
+            width = height = None
+            with limit_ffmpeg_concurrency():
+                dimensions = extract_dimensions(self.root_path.joinpath(Path(video.id)))
+            match dimensions:
+                case Failure(e):
+                    logger.error(f'Failed to extract dimensions from video {video.id}: {e}')
+                    raise Exception(e)
+                case Success((width, height)):
+                    pass
+            self._update_video_status(video.id, VideoScanStatus.SCANNED_SUCCESS, width=width, height=height)
+        except Exception as e:
+            logger.exception(e)
+            self._update_video_status(video.id, VideoScanStatus.SCANNED_FAIL, fail_reason=e.__str__())
 
     def _update_video_status(self, video_id: str, status: VideoScanStatus, width: int =-1, height: int =-1, fail_reason: str | None = None):
         logger.debug(f"updating video status of {video_id} to {status} (errors: {fail_reason})")
@@ -288,7 +297,8 @@ class SubtitleScanner(pykka.ThreadingActor):
             logger.debug(f"Extracting subtitles from {video_id}")
             start_ts = time.time()
             langs = [lang.strip().lower() for lang in self.languages] if self.languages else None
-            subtitles = extract_subs_by_language(absolute_video_path, langs) if langs else extract_subs(absolute_video_path)
+            with limit_ffmpeg_concurrency():
+                subtitles = extract_subs_by_language(absolute_video_path, langs) if langs else extract_subs(absolute_video_path)
             # Significantly reduces id length of subtitle while remaining unique per video
             video_id_md5 = hashlib.md5(video_id.__str__().encode("utf-8")).hexdigest()[0:8]
             match subtitles:
