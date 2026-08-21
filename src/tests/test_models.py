@@ -31,9 +31,9 @@ def test_subtitle_creation():
 def test_clip_settings_validation():
     settings = ClipSettings(
         start_time=0.0,
-        end_time=5000,
+        end_time=10.0,
         original_start_time=0.0,
-        original_end_time=5.0,
+        original_end_time=10.0,
         crop=False,
         resolution=500,
         video_id="/path/to/video",

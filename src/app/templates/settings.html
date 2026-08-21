@@ -167,6 +167,7 @@
             class="textarea w-full {{ 'input-error' if errs is not none and 'caption' in errs else '' }}"
             name="caption"
             type="text"
+            maxlength="500"
         >{{ settings.caption }}</textarea>
         {% if errs is not none and 'caption' in errs %}
             <div class="text-error">{{ errs['caption'] }}</div>

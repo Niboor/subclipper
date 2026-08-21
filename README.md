@@ -73,6 +73,8 @@ new temporary directory each time the app starts
 an in-memory database (not persisted across restarts) if not set
 - `SINGLE_SHOW_NAME`: if set, the homepage skips the file browser and goes straight to this
 show's subtitles
+- `MAX_GIF_DURATION_SECONDS`: longest clip (in seconds) that `/gif` will generate. Defaults
+to `15`
 - `MAX_CONCURRENT_FFMPEG`: maximum number of ffmpeg/ffprobe subprocesses allowed to run at
 once, defaults to 4. Each ffmpeg process holds its own decode buffers — a single-frame thumbnail
 grab from a real 1080p episode was measured using 90-190MB RSS depending on how many decode
@@ -90,6 +92,14 @@ even a lowered `MAX_CONCURRENT_FFMPEG` isn't enough headroom
 own listener separate from the main application so they can be kept off the public ingress
 without path-based blocking rules. Defaults to `9090`; set to `0` to disable the metrics server
 entirely
+- `METRICS_HOST`: interface the metrics/debug listener binds to. Defaults to `127.0.0.1` so it's
+only reachable from inside the container/host by default; set to `0.0.0.0` if you specifically
+want it reachable from outside and are handling access control (e.g. firewalling, a proxy) yourself
+- `GIF_RATE_LIMIT_PER_MINUTE`: maximum number of `/gif` requests (clip generation, the most
+expensive endpoint in the app) allowed per client IP per minute. Disabled (`0`) by default.
+Note this is keyed on `request.remote_addr`, which is the app's direct TCP peer — behind a
+reverse proxy that doesn't forward the real client IP, every request looks like it comes from
+the proxy, so the limit effectively becomes a shared global cap rather than a per-client one
 
 These are automatically set when using `make run`, but you can override them:
 
