@@ -70,7 +70,7 @@ def create_metrics_app() -> Flask:
     return app
 
 
-def start_metrics_server(port: int, host: str = "0.0.0.0") -> threading.Thread:
+def start_metrics_server(port: int, host: str = "127.0.0.1") -> threading.Thread:
     """Serve the metrics/debug endpoints on their own port in a background thread,
     separate from the main application listener."""
     app = create_metrics_app()

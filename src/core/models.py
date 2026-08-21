@@ -110,5 +110,7 @@ class ClipSettings:
             errs['font_size'] = 'font size too large'
         if self.format not in {'gif', 'webp'}:
             errs['format'] = 'invalid output format, only gif and webp are allowed'
+        if len(self.caption) > 500:
+            errs['caption'] = 'caption too long, must be 500 characters or fewer'
 
         return errs

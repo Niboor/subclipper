@@ -18,11 +18,19 @@ from jinja2 import Template
 
 from ..core.models import ClipSettings, VideoScanStatus, Video, Subtitle
 from ..utils.config import Config
+from ..utils.rate_limit import RateLimiter
 from sub2clip.subtitles import Subtitle as SSubtitle
 
 logger = logging.getLogger(__name__)
 bp = Blueprint('main', __name__)
 config = Config()
+
+# /gif runs ffmpeg and is by far the most expensive endpoint in this app, and it
+# requires no authentication — bound how often a single client can hit it.
+_gif_rate_limiter = RateLimiter(
+    max_requests=int(os.getenv("GIF_RATE_LIMIT_PER_MINUTE", "20")),
+    window_seconds=60,
+)
 
 def cached_render_template(template, **context):
     """Render a template with caching headers."""
@@ -52,6 +60,8 @@ def sse_event_stream(cb: Generator[SseEvent, None, None]) -> Response:
 def create_clip_settings_from_request() -> tuple[list[Subtitle], ClipSettings]:
     """Create ClipSettings from the current request's query parameters."""
     video_id = request.args.get('video_id', '', type=str)
+    if config.subtitle_indexer.get_video(video_id) is None:
+        raise Exception(f"video with id {video_id} not found")
 
     clips: dict[str, dict[str, str]] = {}
     for key in request.args.keys():
@@ -115,6 +125,8 @@ def get_public(path):
 @bp.route("/files/<path:path>")
 def videos(path: str):
     full_path = config.subtitle_indexer.get_path(path)
+    if full_path is None:
+        return f"Not found: {path}", 404
     root_path = config.subtitle_indexer.get_path('.')
     progress = config.subtitle_indexer.get_scanning_progress(Path(path) if path != '.' else Path(''))
     return cached_render_template(
@@ -134,6 +146,8 @@ def scan_status_root():
 @bp.route("/scan_status/<path:path>")
 def scan_status(path: str):
     full_path = config.subtitle_indexer.get_path(path)
+    if full_path is None:
+        return f"Not found: {path}", 404
     if full_path.is_file():
         video = config.subtitle_indexer.get_video(path)
         if video is None:
@@ -372,6 +386,9 @@ def get_gif_view():
 
 @bp.route("/gif")
 def get_gif():
+    if not _gif_rate_limiter.allow(request.remote_addr or "unknown"):
+        return "Too many clip requests, please slow down and try again shortly", 429
+
     subs, settings = create_clip_settings_from_request()
 
     output_path = config.video_processor.generate_clip(settings, subs)
@@ -404,8 +421,6 @@ def index(path: str):
     selected = request.args.get("selected", None, type=str)
     page = request.args.get("page", None, type=int)
     page_length = request.args.get("page_length", config.default_page_length, type=int)
-
-    path_is_file = config.subtitle_indexer.get_path(path).is_file()
 
     hx_request = request.headers.get("HX-Request")
     if config.single_show_name is None and path == "." and filter == '' and page is None:

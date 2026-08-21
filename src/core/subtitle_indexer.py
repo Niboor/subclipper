@@ -355,8 +355,13 @@ class SubtitleIndexer():
         while True:
             yield self.video_update_listener.get()
 
-    def get_path(self, search_subpath: str) -> Path:
-        subpath = self.root_path.joinpath(search_subpath)
+    def get_path(self, search_subpath: str) -> Optional[Path]:
+        """Resolve search_subpath against root_path, returning None if the result
+        would escape root_path (e.g. via '..' segments or an absolute path)."""
+        root = self.root_path.resolve()
+        subpath = (self.root_path / search_subpath).resolve()
+        if subpath != root and root not in subpath.parents:
+            return None
         return subpath
 
     def get_subtitle_pages(self, search_subpath: str, search_string: str, page_length: int) -> int:

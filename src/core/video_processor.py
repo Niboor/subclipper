@@ -27,6 +27,19 @@ class VideoProcessor:
         self.subtitle_indexer = subtitle_indexer
         logger.info(f"Initialized VideoProcessor with search_path: {search_path}, font_name: {font_name}, language filter: {languages}")
 
+    def _resolve_within_search_path(self, video_id: str) -> Optional[Path]:
+        """Resolve video_id against search_path and verify it doesn't escape it.
+
+        This is defense in depth on top of the caller-side check that video_id
+        refers to a video the indexer actually knows about — it protects against
+        any other path that ends up here without going through that check.
+        """
+        resolved_search_path = self.search_path.resolve()
+        candidate = (self.search_path / video_id).resolve()
+        if candidate != resolved_search_path and resolved_search_path not in candidate.parents:
+            return None
+        return candidate
+
     @timed("video_processor:generate_clip")
     def generate_clip(self, settings: ClipSettings, subs: list[Subtitle]) -> Result[Path, str]:
         """Generate a video clip with the given settings."""
@@ -37,6 +50,10 @@ class VideoProcessor:
             if errors:
                 return Failure(str(errors))
 
+            input_path = self._resolve_within_search_path(settings.video_id)
+            if input_path is None:
+                return Failure(f"video id {settings.video_id} is not a valid video")
+
             # Create a temporary directory that won't be automatically cleaned up
             tmp_dir = Path(tempfile.mkdtemp())
             output_path = tmp_dir / f'clip.{settings.format}'
@@ -46,7 +63,7 @@ class VideoProcessor:
             start_time_ms = int(settings.start_time * 1000)
             end_time_ms = int(settings.end_time * 1000)
             clip_settings = SubSettings(
-                input_path=self.search_path.joinpath(settings.video_id),
+                input_path=input_path,
                 output_path=output_path,
                 output_format=VideoFormat[settings.format.upper()],
                 start=start_time_ms,
@@ -102,13 +119,20 @@ class VideoProcessor:
     def _generate_thumbnail(self, video_id: str, timestamp: int, output_path: Path, resolution: int=50) -> Result[Path, str]:
         """Generate the stillframe for the given timestamp"""
         video = self.subtitle_indexer.get_video(video_id)
+        if video is None:
+            return Failure(f"video id {video_id} is not a valid video")
+
+        input_path = self._resolve_within_search_path(video_id)
+        if input_path is None:
+            return Failure(f"video id {video_id} is not a valid video")
+
         width, height = video.width, video.height
         scaled_height = resolution
         scaled_width  = 2 * round((width * scaled_height / height) / 2)
 
         with limit_ffmpeg_concurrency():
             result = create_thumbnail(
-                self.search_path.joinpath(video_id),
+                input_path,
                 output_path,
                 start_s=timestamp/1000.0,
                 width=scaled_width,

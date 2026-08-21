@@ -90,6 +90,11 @@ even a lowered `MAX_CONCURRENT_FFMPEG` isn't enough headroom
 own listener separate from the main application so they can be kept off the public ingress
 without path-based blocking rules. Defaults to `9090`; set to `0` to disable the metrics server
 entirely
+- `METRICS_HOST`: interface the metrics/debug listener binds to. Defaults to `127.0.0.1` so it's
+only reachable from inside the container/host by default; set to `0.0.0.0` if you specifically
+want it reachable from outside and are handling access control (e.g. firewalling, a proxy) yourself
+- `GIF_RATE_LIMIT_PER_MINUTE`: maximum number of `/gif` requests (clip generation, the most
+expensive endpoint in the app) allowed per client IP per minute. Defaults to `20`
 
 These are automatically set when using `make run`, but you can override them:
 

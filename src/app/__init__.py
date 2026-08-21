@@ -59,8 +59,16 @@ def create_app():
             metrics.record(f'route:{request.endpoint or request.path}', elapsed)
         return response
 
+    @app.after_request
+    def _security_headers(response):
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['X-Frame-Options'] = 'DENY'
+        response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+        return response
+
     metrics_port = int(os.getenv('METRICS_PORT', '9090'))
+    metrics_host = os.getenv('METRICS_HOST', '127.0.0.1')
     if metrics_port != 0:
-        start_metrics_server(metrics_port)
+        start_metrics_server(metrics_port, metrics_host)
 
     return app
