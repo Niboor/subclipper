@@ -27,9 +27,9 @@ config = Config()
 
 # /gif runs ffmpeg and is by far the most expensive endpoint in this app, and it
 # requires no authentication — bound how often a single client can hit it.
-# Set GIF_RATE_LIMIT_PER_MINUTE=0 to disable (e.g. when access is already restricted
-# at the network level, or behind a proxy that doesn't forward per-client IPs).
-_gif_rate_limit_per_minute = int(os.getenv("GIF_RATE_LIMIT_PER_MINUTE", "20"))
+# Disabled (0) by default, since remote_addr-based limiting isn't meaningful behind a
+# proxy that doesn't forward per-client IPs; set GIF_RATE_LIMIT_PER_MINUTE to enable.
+_gif_rate_limit_per_minute = int(os.getenv("GIF_RATE_LIMIT_PER_MINUTE", "0"))
 _gif_rate_limiter = RateLimiter(
     max_requests=_gif_rate_limit_per_minute,
     window_seconds=60,

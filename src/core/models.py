@@ -1,10 +1,13 @@
 from __future__ import annotations
+import os
 from dataclasses import (dataclass, field)
 from pathlib import Path
 from typing import Any, List, Optional, TypeVar
 from enum import Enum
 from sub2clip.subtitles import Subtitle as SSubtitle
 from ..utils.id_encoding import (decode_id, encode_id)
+
+MAX_GIF_DURATION_SECONDS = float(os.getenv("MAX_GIF_DURATION_SECONDS", "15"))
 
 class VideoScanStatus(Enum):
     UNSCANNED = 'UNSCANNED'
@@ -100,8 +103,8 @@ class ClipSettings:
 
         if self.end_time <= self.start_time:
             errs['end'] = 'end time must be after start time'
-        if self.end_time - self.start_time > 10000:
-            errs['end'] = 'clip too long'
+        elif self.end_time - self.start_time > MAX_GIF_DURATION_SECONDS:
+            errs['end'] = f'clip too long, must be {MAX_GIF_DURATION_SECONDS:g} seconds or fewer'
         if self.resolution < 50 or self.resolution > 1024:
             errs['resolution'] = 'resolution must be between 50 and 1024'
         if self.video_id == '':
