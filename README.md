@@ -94,7 +94,11 @@ entirely
 only reachable from inside the container/host by default; set to `0.0.0.0` if you specifically
 want it reachable from outside and are handling access control (e.g. firewalling, a proxy) yourself
 - `GIF_RATE_LIMIT_PER_MINUTE`: maximum number of `/gif` requests (clip generation, the most
-expensive endpoint in the app) allowed per client IP per minute. Defaults to `20`
+expensive endpoint in the app) allowed per client IP per minute. Defaults to `20`; set to `0`
+to disable. Note this is keyed on `request.remote_addr`, which is the app's direct TCP peer —
+behind a reverse proxy that doesn't forward the real client IP, every request looks like it
+comes from the proxy, so the limit effectively becomes a shared global cap rather than a
+per-client one
 
 These are automatically set when using `make run`, but you can override them:
 

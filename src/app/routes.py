@@ -27,10 +27,13 @@ config = Config()
 
 # /gif runs ffmpeg and is by far the most expensive endpoint in this app, and it
 # requires no authentication — bound how often a single client can hit it.
+# Set GIF_RATE_LIMIT_PER_MINUTE=0 to disable (e.g. when access is already restricted
+# at the network level, or behind a proxy that doesn't forward per-client IPs).
+_gif_rate_limit_per_minute = int(os.getenv("GIF_RATE_LIMIT_PER_MINUTE", "20"))
 _gif_rate_limiter = RateLimiter(
-    max_requests=int(os.getenv("GIF_RATE_LIMIT_PER_MINUTE", "20")),
+    max_requests=_gif_rate_limit_per_minute,
     window_seconds=60,
-)
+) if _gif_rate_limit_per_minute > 0 else None
 
 def cached_render_template(template, **context):
     """Render a template with caching headers."""
@@ -386,7 +389,7 @@ def get_gif_view():
 
 @bp.route("/gif")
 def get_gif():
-    if not _gif_rate_limiter.allow(request.remote_addr or "unknown"):
+    if _gif_rate_limiter is not None and not _gif_rate_limiter.allow(request.remote_addr or "unknown"):
         return "Too many clip requests, please slow down and try again shortly", 429
 
     subs, settings = create_clip_settings_from_request()
