@@ -37,9 +37,19 @@ _gif_rate_limiter = RateLimiter(
 ) if _gif_rate_limit_per_minute > 0 else None
 
 def cached_render_template(template, **context):
-    """Render a template with caching headers."""
+    """Render a template, explicitly preventing the response from being cached.
+
+    Several routes (e.g. "/") serve completely different content for the same URL
+    depending on the HX-Request header (a full page vs. just the fragment htmx asked
+    for), and never set a Vary/Cache-Control header to say so - which previously let
+    browsers reuse a cached fragment response for a later plain navigation to the same
+    URL, blanking out everything outside <main>. No response rendered through here is
+    meant to be cached at all, so rule it out entirely rather than rely on Vary.
+    """
     rendered_template = render_template(template, **context)
     response = make_response(rendered_template)
+    response.headers['Cache-Control'] = 'no-store'
+    response.headers['Vary'] = 'HX-Request'
     return response
 
 class SseEvent(NamedTuple):
