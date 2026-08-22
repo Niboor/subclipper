@@ -1,8 +1,21 @@
 export * from "./components/dual-handle-slider"
 export * from "./components/closable-dialog"
 
-import { SwapOptions } from "htmx.org";
+import htmx, { SwapOptions } from "htmx.org";
 import "./main.css"
+
+// htmx's own popstate/history setup only runs once document.readyState reaches
+// 'complete', or else on the next 'DOMContentLoaded' - and that event fires at most
+// once per page. Loading htmx via a dynamic import() raced that: if the import
+// happened to resolve after DOMContentLoaded had already fired but before 'complete'
+// (readyState 'interactive' - e.g. blocked on the Google Fonts preconnects/stylesheet
+// below), htmx would register for an event that will never fire again, silently never
+// installing window.onpopstate for the rest of the page's life. Back/forward would
+// then update the URL bar (a native browser action) while doing nothing else, since
+// nothing was listening. A static import is fully resolved as part of module graph
+// evaluation, which itself is guaranteed to finish before DOMContentLoaded - closing
+// the race instead of trying to win it.
+(window as any).htmx = htmx;
 
 // Restoring a page from htmx's history cache (back/forward) replaces document.body's
 // innerHTML wholesale with the cached snapshot, then reprocesses it. Every element in
@@ -35,13 +48,7 @@ document.body.addEventListener(`htmx:beforeHistorySave`, () => {
   });
 })
 
-let htmx: typeof import("htmx.org").default;
 async function main() {
-  const htmxModule = await import('htmx.org');
-  htmx = htmxModule.default;
-
-  (window as any).htmx = htmx;
-  
   await import("htmx-ext-response-targets")
   await import("htmx-ext-sse")
   
