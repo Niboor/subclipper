@@ -23,6 +23,18 @@ let restoringHistory = false;
 document.body.addEventListener(`htmx:historyCacheHit`, () => { restoringHistory = true; })
 document.body.addEventListener(`htmx:historyRestore`, () => { restoringHistory = false; })
 
+// htmx's history snapshot is built from elt.cloneNode(true), which captures the HTML
+// `value` attribute an input started with, not the live `.value` property that typing
+// (or our search-as-you-type handler) updates. That leaves inputs showing stale text
+// after a history cache-hit restore even though the rest of the page is current. Since
+// htmx:beforeHistorySave fires immediately before it clones the DOM for the snapshot,
+// syncing the attribute here is enough for the clone to pick up what's actually on screen.
+document.body.addEventListener(`htmx:beforeHistorySave`, () => {
+  document.body.querySelectorAll(`input[type="search"], input[type="text"]`).forEach((el) => {
+    el.setAttribute(`value`, (el as HTMLInputElement).value);
+  });
+})
+
 let htmx: typeof import("htmx.org").default;
 async function main() {
   const htmxModule = await import('htmx.org');
