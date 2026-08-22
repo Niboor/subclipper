@@ -19,6 +19,7 @@ from jinja2 import Template
 from ..core.models import ClipSettings, VideoScanStatus, Video, Subtitle
 from ..utils.config import Config
 from ..utils.rate_limit import RateLimiter
+from ..utils.pagination import paginate_window
 from sub2clip.subtitles import Subtitle as SSubtitle
 
 logger = logging.getLogger(__name__)
@@ -247,10 +248,9 @@ def scan(path: str):
     config.subtitle_indexer.scan(Path(path))
     return "OK"
 
-@bp.route("/video_selection_dropdown", defaults={'path': '.'})
-@bp.route("/video_selection_dropdown/", defaults={'path': '.'})
-@bp.route("/video_selection_dropdown/<path:path>")
-def current_path(path):
+@bp.route("/video_selection_dropdown")
+def current_path():
+    path = request.args.get('path', '.', type=str) or '.'
     if path == "." and config.single_show_name is None:
         # We do not want to show it on the homescreen
         return ""
@@ -456,6 +456,7 @@ def index(path: str):
             page=page,
             page_length=page_length,
             pages=pages,
+            page_numbers=paginate_window(page, pages),
         )
         resp.headers['HX-Trigger-After-Settle'] = 'refetch-current-path'
 

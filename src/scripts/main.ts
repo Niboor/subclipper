@@ -75,24 +75,6 @@ async function main() {
     },
   })
 
-  htmx.defineExtension(`interpolate-current-path`, {
-    onEvent(name, event) {
-      if(name === `htmx:configRequest`) {
-
-        
-        // Path that a request is sent to
-        const path = event.detail.path.split("?")[0]
-        // Query parameters sent to that path
-        const params = event.detail.path.split("?")[1] || ""
-
-        event.detail.path = `${path.replaceAll(`*`, window.location.pathname.slice(1))}?${params}`
-
-
-      }
-      return true
-    },
-  })
-
   // HTMX uses history.pushState, which does not update CSS :target pseudoclass: https://developer.mozilla.org/en-US/docs/Web/CSS/:target#description
   // Fix taken and modified from https://github.com/bigskysoftware/htmx/issues/3447
   htmx.on(`htmx:afterSwap`, (event: Event & { detail: SwapOptions["eventInfo"] }) => {
