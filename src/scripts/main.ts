@@ -1,16 +1,54 @@
 export * from "./components/dual-handle-slider"
 export * from "./components/closable-dialog"
 
-import { SwapOptions } from "htmx.org";
+import htmx, { SwapOptions } from "htmx.org";
 import "./main.css"
 
-let htmx: typeof import("htmx.org").default;
-async function main() {
-  const htmxModule = await import('htmx.org');
-  htmx = htmxModule.default;
+// htmx's own popstate/history setup only runs once document.readyState reaches
+// 'complete', or else on the next 'DOMContentLoaded' - and that event fires at most
+// once per page. Loading htmx via a dynamic import() raced that: if the import
+// happened to resolve after DOMContentLoaded had already fired but before 'complete'
+// (readyState 'interactive' - e.g. blocked on the Google Fonts preconnects/stylesheet
+// below), htmx would register for an event that will never fire again, silently never
+// installing window.onpopstate for the rest of the page's life. Back/forward would
+// then update the URL bar (a native browser action) while doing nothing else, since
+// nothing was listening. A static import is fully resolved as part of module graph
+// evaluation, which itself is guaranteed to finish before DOMContentLoaded - closing
+// the race instead of trying to win it.
+(window as any).htmx = htmx;
 
-  (window as any).htmx = htmx;
-  
+// Restoring a page from htmx's history cache (back/forward) replaces document.body's
+// innerHTML wholesale with the cached snapshot, then reprocesses it. Every element in
+// that snapshot with hx-trigger="load" - <main>, the video selection dropdown, the file
+// browser list, etc. - looks "new" to htmx post-swap and fires again, even though the
+// snapshot already has settled, correct content. That redundantly re-fetches everything
+// and, worse, opens a fresh SSE connection per re-fetch without closing the old one.
+// hx-trigger="load[!window.htmxRestoringHistory()]" on those elements uses this flag to
+// skip that redundant refire specifically during a history restore.
+//
+// This is set up here, at module top-level, rather than inside main() below: htmx's own
+// ESM build auto-processes the document on DOMContentLoaded independently of (and
+// sometimes before) this module's own async setup finishes, so hx-trigger conditions can
+// already be evaluated before main() would otherwise get around to defining this. Plain
+// addEventListener (rather than htmx.on) avoids even depending on htmx having loaded yet.
+let restoringHistory = false;
+(window as any).htmxRestoringHistory = () => restoringHistory;
+document.body.addEventListener(`htmx:historyCacheHit`, () => { restoringHistory = true; })
+document.body.addEventListener(`htmx:historyRestore`, () => { restoringHistory = false; })
+
+// htmx's history snapshot is built from elt.cloneNode(true), which captures the HTML
+// `value` attribute an input started with, not the live `.value` property that typing
+// (or our search-as-you-type handler) updates. That leaves inputs showing stale text
+// after a history cache-hit restore even though the rest of the page is current. Since
+// htmx:beforeHistorySave fires immediately before it clones the DOM for the snapshot,
+// syncing the attribute here is enough for the clone to pick up what's actually on screen.
+document.body.addEventListener(`htmx:beforeHistorySave`, () => {
+  document.body.querySelectorAll(`input[type="search"], input[type="text"]`).forEach((el) => {
+    el.setAttribute(`value`, (el as HTMLInputElement).value);
+  });
+})
+
+async function main() {
   await import("htmx-ext-response-targets")
   await import("htmx-ext-sse")
   
@@ -72,24 +110,6 @@ async function main() {
             event.detail.path = `${path}?${newSearchParams.toString()}`
         }
         return true
-    },
-  })
-
-  htmx.defineExtension(`interpolate-current-path`, {
-    onEvent(name, event) {
-      if(name === `htmx:configRequest`) {
-
-        
-        // Path that a request is sent to
-        const path = event.detail.path.split("?")[0]
-        // Query parameters sent to that path
-        const params = event.detail.path.split("?")[1] || ""
-
-        event.detail.path = `${path.replaceAll(`*`, window.location.pathname.slice(1))}?${params}`
-
-
-      }
-      return true
     },
   })
 

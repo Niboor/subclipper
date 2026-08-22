@@ -29,8 +29,8 @@
                                 height="50"
                                 loading="lazy"
                                 decoding="async"
-                                onload="this.classList.remove('opacity-0'); this.previousElementSibling.remove()"
-                                onerror="this.previousElementSibling.classList.add('bg-error/20')"
+                                onload="this.classList.remove('opacity-0'); this.previousElementSibling?.remove()"
+                                onerror="this.previousElementSibling?.classList.add('bg-error/20')"
                             />
                         </div>
                         {% endif %}
@@ -57,17 +57,21 @@
             </ul>
         {% endif %}
     </div>
-    <div class="flex-none join flex flex-row justify-safe-center min-h-12 overflow-x-auto">
-        {% for i in range(0, pages) %}
-            <button
-                class="join-item btn {{ 'btn-active' if i == page else '' }}"
-                hx-get="/?page={{ i }}"
-                hx-target="main"
-                hx-replace-url="true"
-                hx-ext="preserve-params"
-            >
-                {{ i+1 }}
-            </button>
+    <div class="flex-none join flex flex-row justify-center-safe min-h-12 overflow-x-auto">
+        {% for i in page_numbers %}
+            {% if i is none %}
+                <span class="join-item btn btn-disabled">…</span>
+            {% else %}
+                <button
+                    class="join-item btn {{ 'btn-primary' if i == page else '' }}"
+                    hx-get="/{{ path }}?page={{ i }}"
+                    hx-target="main"
+                    hx-replace-url="true"
+                    hx-ext="preserve-params"
+                >
+                    {{ i+1 }}
+                </button>
+            {% endif %}
         {% endfor %}
     </div>
     </div>

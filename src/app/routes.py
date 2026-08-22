@@ -19,6 +19,7 @@ from jinja2 import Template
 from ..core.models import ClipSettings, VideoScanStatus, Video, Subtitle
 from ..utils.config import Config
 from ..utils.rate_limit import RateLimiter
+from ..utils.pagination import paginate_window
 from sub2clip.subtitles import Subtitle as SSubtitle
 
 logger = logging.getLogger(__name__)
@@ -36,9 +37,19 @@ _gif_rate_limiter = RateLimiter(
 ) if _gif_rate_limit_per_minute > 0 else None
 
 def cached_render_template(template, **context):
-    """Render a template with caching headers."""
+    """Render a template, explicitly preventing the response from being cached.
+
+    Several routes (e.g. "/") serve completely different content for the same URL
+    depending on the HX-Request header (a full page vs. just the fragment htmx asked
+    for), and never set a Vary/Cache-Control header to say so - which previously let
+    browsers reuse a cached fragment response for a later plain navigation to the same
+    URL, blanking out everything outside <main>. No response rendered through here is
+    meant to be cached at all, so rule it out entirely rather than rely on Vary.
+    """
     rendered_template = render_template(template, **context)
     response = make_response(rendered_template)
+    response.headers['Cache-Control'] = 'no-store'
+    response.headers['Vary'] = 'HX-Request'
     return response
 
 class SseEvent(NamedTuple):
@@ -247,12 +258,16 @@ def scan(path: str):
     config.subtitle_indexer.scan(Path(path))
     return "OK"
 
-@bp.route("/video_selection_dropdown", defaults={'path': '.'})
-@bp.route("/video_selection_dropdown/", defaults={'path': '.'})
-@bp.route("/video_selection_dropdown/<path:path>")
-def current_path(path):
-    if path == "." and config.single_show_name is None:
-        # We do not want to show it on the homescreen
+@bp.route("/video_selection_dropdown")
+def current_path():
+    path = request.args.get('path', '.', type=str) or '.'
+    filter = request.args.get('filter', '', type=str)
+    page = request.args.get('page', None, type=int)
+    if path == "." and filter == '' and page is None and config.single_show_name is None:
+        # Mirrors index()'s own check for the bare landing page: that page already has its
+        # own full folder browser, so the "currently searching" widget would be redundant.
+        # Once there's an active search or page (still at path=".", since a homepage search
+        # doesn't change window.location.pathname), it belongs back in the subtitle list view.
         return ""
     else:
         return cached_render_template(
@@ -385,7 +400,7 @@ def get_gif_view():
         resp.headers['HX-Reswap'] = 'outerHTML'
         return resp, 400
 
-    return cached_render_template("gif_view.html", url=f"/gif?{request.query_string.decode()}")
+    return cached_render_template("gif_view.html", url=f"/gif?{request.query_string.decode()}", format=settings.format)
 
 @bp.route("/gif")
 def get_gif():
@@ -456,6 +471,7 @@ def index(path: str):
             page=page,
             page_length=page_length,
             pages=pages,
+            page_numbers=paginate_window(page, pages),
         )
         resp.headers['HX-Trigger-After-Settle'] = 'refetch-current-path'
 

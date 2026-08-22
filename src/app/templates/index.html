@@ -10,7 +10,7 @@
         <ul
             class="w-full h-full menu menu-vertical flex-nowrap"
             hx-get="/files"
-            hx-trigger="load"
+            hx-trigger="load[!window.htmxRestoringHistory()]"
         >
             <div class="flex flex-col gap-2 overflow-hidden">
                 <div class="skeleton w-full h-12"></div>
