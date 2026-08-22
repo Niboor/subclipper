@@ -63,7 +63,7 @@
                 <span class="join-item btn btn-disabled">…</span>
             {% else %}
                 <button
-                    class="join-item btn {{ 'btn-active' if i == page else '' }}"
+                    class="join-item btn {{ 'btn-primary' if i == page else '' }}"
                     hx-get="/?page={{ i }}"
                     hx-target="main"
                     hx-replace-url="true"
