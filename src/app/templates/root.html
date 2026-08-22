@@ -71,7 +71,7 @@
                 <div
                     class="flex-auto flex justify-center"
                     hx-get="/video_selection_dropdown"
-                    hx-trigger="load, refetch-current-path from:body"
+                    hx-trigger="load[!window.htmxRestoringHistory()], refetch-current-path from:body"
                     hx-vals='js:{path: window.location.pathname === "/" ? "." : window.location.pathname.slice(1)}'
                 >
 
@@ -82,7 +82,7 @@
     <main
         class="flex-1 min-h-0 md:p-8"
         hx-get="/{{ path }}{% if request.query_string %}?{{ request.query_string.decode() }}{% endif %}"
-        hx-trigger="load"
+        hx-trigger="load[!window.htmxRestoringHistory()]"
     >
         <div class="skeleton w-full h-full bg-base-200"></div>
     </main>

@@ -4,6 +4,25 @@ export * from "./components/closable-dialog"
 import { SwapOptions } from "htmx.org";
 import "./main.css"
 
+// Restoring a page from htmx's history cache (back/forward) replaces document.body's
+// innerHTML wholesale with the cached snapshot, then reprocesses it. Every element in
+// that snapshot with hx-trigger="load" - <main>, the video selection dropdown, the file
+// browser list, etc. - looks "new" to htmx post-swap and fires again, even though the
+// snapshot already has settled, correct content. That redundantly re-fetches everything
+// and, worse, opens a fresh SSE connection per re-fetch without closing the old one.
+// hx-trigger="load[!window.htmxRestoringHistory()]" on those elements uses this flag to
+// skip that redundant refire specifically during a history restore.
+//
+// This is set up here, at module top-level, rather than inside main() below: htmx's own
+// ESM build auto-processes the document on DOMContentLoaded independently of (and
+// sometimes before) this module's own async setup finishes, so hx-trigger conditions can
+// already be evaluated before main() would otherwise get around to defining this. Plain
+// addEventListener (rather than htmx.on) avoids even depending on htmx having loaded yet.
+let restoringHistory = false;
+(window as any).htmxRestoringHistory = () => restoringHistory;
+document.body.addEventListener(`htmx:historyCacheHit`, () => { restoringHistory = true; })
+document.body.addEventListener(`htmx:historyRestore`, () => { restoringHistory = false; })
+
 let htmx: typeof import("htmx.org").default;
 async function main() {
   const htmxModule = await import('htmx.org');
