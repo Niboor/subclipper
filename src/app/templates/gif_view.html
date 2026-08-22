@@ -12,4 +12,14 @@
         src="{{ url }}"
         alt="The clip is loading..."
     />
+    <a
+        href="{{ url }}"
+        download="clip.{{ format }}"
+        hx-boost="false"
+        class="btn btn-circle btn-sm absolute bottom-2 right-2 z-20"
+        title="Download clip"
+        aria-label="Download clip"
+    >
+        {% include "icons/arrow-down-tray.html" %}
+    </a>
 {% endif %}

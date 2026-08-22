@@ -385,7 +385,7 @@ def get_gif_view():
         resp.headers['HX-Reswap'] = 'outerHTML'
         return resp, 400
 
-    return cached_render_template("gif_view.html", url=f"/gif?{request.query_string.decode()}")
+    return cached_render_template("gif_view.html", url=f"/gif?{request.query_string.decode()}", format=settings.format)
 
 @bp.route("/gif")
 def get_gif():
