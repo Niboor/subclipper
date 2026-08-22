@@ -4,7 +4,7 @@
 {% set open_by_default = is_root %}
 <li
     id="id-{{ encode_id(relative_path.__str__()) }}"
-    class="h-full overflow-auto"
+    class="{{ 'h-full' if is_root else '' }}"
     name="video"
     value=""
     {% if is_root %}
