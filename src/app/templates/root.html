@@ -72,7 +72,11 @@
                     class="flex-auto flex justify-center"
                     hx-get="/video_selection_dropdown"
                     hx-trigger="load[!window.htmxRestoringHistory()], refetch-current-path from:body"
-                    hx-vals='js:{path: window.location.pathname === "/" ? "." : window.location.pathname.slice(1)}'
+                    hx-vals='js:{
+                        path: window.location.pathname === "/" ? "." : decodeURIComponent(window.location.pathname.slice(1)),
+                        filter: new URLSearchParams(window.location.search).get("filter") || "",
+                        page: new URLSearchParams(window.location.search).get("page") || ""
+                    }'
                 >
 
                 </div>

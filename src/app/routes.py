@@ -261,8 +261,13 @@ def scan(path: str):
 @bp.route("/video_selection_dropdown")
 def current_path():
     path = request.args.get('path', '.', type=str) or '.'
-    if path == "." and config.single_show_name is None:
-        # We do not want to show it on the homescreen
+    filter = request.args.get('filter', '', type=str)
+    page = request.args.get('page', None, type=int)
+    if path == "." and filter == '' and page is None and config.single_show_name is None:
+        # Mirrors index()'s own check for the bare landing page: that page already has its
+        # own full folder browser, so the "currently searching" widget would be redundant.
+        # Once there's an active search or page (still at path=".", since a homepage search
+        # doesn't change window.location.pathname), it belongs back in the subtitle list view.
         return ""
     else:
         return cached_render_template(
